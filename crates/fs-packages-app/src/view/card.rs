@@ -13,6 +13,29 @@ const LOGO: f32 = 56.0;
 /// Corner radius of the logo square.
 const LOGO_RADIUS: f32 = 14.0;
 
+/// The badge "Pre-release" / "Vorabversion" of a package whose offered release is one (`<release type="development">`); `None` otherwise.
+pub(super) fn prerelease_badge(card: &Card) -> Option<Div> {
+    use fs_components_widgets::craft::{BadgeTone, badge};
+    card.prerelease.then(|| {
+        div().flex_row().child(badge(
+            crate::words_front::prerelease(crate::words_front::Lang::current()),
+            BadgeTone::Warn,
+        ))
+    })
+}
+
+/// The same mark as a warning-coloured line in the compact window.
+pub(super) fn prerelease_note(card: &Card) -> Option<Div> {
+    card.prerelease.then(|| {
+        div().child(
+            text(crate::words_front::prerelease(
+                crate::words_front::Lang::current(),
+            ))
+            .class("fs-c-warn"),
+        )
+    })
+}
+
 /// The logo at table size.
 pub(super) fn logo_small(card: &Card) -> Div {
     sized_logo(card, 36.0, 9.0, 18.0)

@@ -137,6 +137,10 @@ fn programs() -> Vec<PackageRow> {
         Some(ChecksumOnly),
     );
     local.details.provides = caps("tasks.items 1.1");
+    // all 0.x are pre-releases here (catalog: `<release type="development">`); Kanidm 1.x stays a plain release as the contrast
+    tasks.details.prerelease = true;
+    people.details.prerelease = true;
+    wiki.details.prerelease = true;
     tasks.details.installed_size = Some(41_943_040);
     tasks.details.origin.maker = "FreeSynergy".into();
     tasks.details.mediatypes = vec!["text/calendar".into()];

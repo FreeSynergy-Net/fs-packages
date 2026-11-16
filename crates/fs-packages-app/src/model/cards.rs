@@ -98,6 +98,8 @@ pub struct Card {
     pub placeholder: Placeholder,
     /// The stored icon (a PNG file), when the catalog entry has one and the engine kept it; it replaces the stand-in.
     pub icon: Option<std::path::PathBuf>,
+    /// The offered release is a pre-release (`type="development"`): shown with the word "Pre-release" / "Vorabversion".
+    pub prerelease: bool,
     /// Release date as the catalog gives it; empty when it does not say.
     pub released: String,
     /// Download size in words; `unknown` when the catalog does not say.
@@ -272,6 +274,7 @@ impl StoreModel {
             buttons: buttons_for(state),
             placeholder: placeholder(name),
             icon: self.backend.icon_path(name),
+            prerelease: row.is_some_and(|r| r.package.details.prerelease),
             released: row
                 .map(|r| r.package.details.released.clone())
                 .unwrap_or_default(),

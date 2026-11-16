@@ -126,6 +126,9 @@ pub struct Details {
     pub size: Option<u64>,
     /// Date of the release (`date` of `<release>`); empty when none.
     pub released: String,
+    /// The release is a pre-release (`<release type="development">`, `AppStream`). All 0.0.x are; shown as "Pre-release" (de "Vorabversion"),
+    /// never filtered out. Not on the wire yet (`store.capnp` has no field in `packages_v1`).
+    pub prerelease: bool,
     /// What changed in this release (`<description>` of the release, tags dropped); empty when none.
     pub changes: String,
     /// Where it comes from.

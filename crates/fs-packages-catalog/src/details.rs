@@ -57,6 +57,8 @@ pub(crate) fn details(
             .find(|n| n.has_tag_name("size") && n.attribute("type") == Some("download"))
             .and_then(|n| n.text())
             .and_then(|t| t.trim().parse().ok()),
+        prerelease: release.has_tag_name("release")
+            && release.attribute("type") == Some("development"),
         released: release.attribute("date").unwrap_or_default().to_owned(),
         changes: crate::lang::lang_text(release, "description", prefs),
         origin,

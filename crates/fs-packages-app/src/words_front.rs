@@ -244,7 +244,7 @@ pub const WARN_MISSING: &str = "Missing";
 pub const WARN_CHOICE: &str = "Choice";
 
 pub use crate::words_lang::{
-    EmptyBlocks, Lang, choice_need, missing_need, no_window, nothing_line,
+    EmptyBlocks, Lang, choice_need, missing_need, no_window, nothing_line, prerelease,
 };
 
 /// Filter chip of variant C: offered, not installed (the short word that fits the narrow list).
