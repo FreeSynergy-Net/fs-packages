@@ -33,6 +33,15 @@ pub fn no_window(lang: Lang) -> &'static str {
     }
 }
 
+/// The badge of a pre-release (`<release type="development">`): all 0.0.x versions are one.
+#[must_use]
+pub fn prerelease(lang: Lang) -> &'static str {
+    match lang {
+        Lang::En => "Pre-release",
+        Lang::De => "Vorabversion",
+    }
+}
+
 /// The three words before the capabilities of a feature: what it offers, needs and can use.
 #[must_use]
 pub fn feature_words(lang: Lang) -> [&'static str; 3] {

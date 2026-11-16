@@ -87,7 +87,12 @@ pub(crate) fn check(root: &Path, extra: Option<&String>) -> Result<(), String> {
             .map(|cat| cat.entries.into_iter().find(|o| o.name.as_str() == e.name));
         match offered {
             Ok(Some(o)) if o.version > have && o.installable() => {
-                println!("{} {} -> {}", e.name, have, o.version);
+                let mark = if o.details.prerelease {
+                    format!(" ({})", crate::commands::prerelease_label())
+                } else {
+                    String::new()
+                };
+                println!("{} {} -> {}{mark}", e.name, have, o.version);
                 newer += 1;
             }
             Ok(_) => {}

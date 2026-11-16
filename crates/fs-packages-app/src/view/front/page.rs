@@ -12,7 +12,7 @@ use crate::launcher::Launcher;
 use crate::model::{
     CapLine, CardState, DescriptionView, NeedsState, PackagePage, ReleaseLine, StoreModel,
 };
-use crate::view::card::sized_logo;
+use crate::view::card::{prerelease_badge, sized_logo};
 use crate::view::shell::{Shared, locked, rebuild};
 use crate::words;
 use crate::words_front as w;
@@ -231,7 +231,8 @@ pub(super) fn page(
         .min_w(0.0)
         .gap(1.0)
         .child(text(p.card.title.clone()).size(24.0).bold())
-        .child(text(caps(&format!("{} - {}", p.kind, p.version))).class("craft-caps-dim"));
+        .child(text(caps(&format!("{} - {}", p.kind, p.version))).class("craft-caps-dim"))
+        .children(prerelease_badge(&p.card));
     if p.icon_missing {
         title = title.child(label_dim(w::ICON_MISSING));
     }

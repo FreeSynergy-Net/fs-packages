@@ -15,7 +15,7 @@ use fs_components_widgets::craft::{
 
 use crate::launcher::Launcher;
 use crate::model::{Card, CardState};
-use crate::view::card::logo;
+use crate::view::card::{logo, prerelease_badge};
 use crate::view::more::more_menu;
 use crate::view::shell::{Shared, locked, rebuild};
 use crate::words;
@@ -230,7 +230,8 @@ pub(super) fn tile(
         Some(_) => badge(card.working_word(), BadgeTone::Info),
         None => badge(card.state_word(), state_tone(card.state)),
     };
-    body = body.child(div().flex_row().child(state_badge));
+    let badges = div().flex_row().flex_wrap().gap(2.0).child(state_badge);
+    body = body.child(badges.children(prerelease_badge(card)));
     body = body.child(
         div()
             .flex_col()

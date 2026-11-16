@@ -9,7 +9,7 @@ use fs_components::blinc::layout::prelude::text;
 
 use crate::launcher::Launcher;
 use crate::model::{CapLine, CardState, DescriptionView, NeedsState, PackagePage, StoreModel};
-use crate::view::card::logo_plain;
+use crate::view::card::{logo_plain, prerelease_note};
 use crate::view::shell::{Shared, button, locked, rebuild};
 use crate::words;
 use crate::words_front as w;
@@ -245,7 +245,8 @@ pub(super) fn pane(
                 .min_w(0.0)
                 .gap(1.0)
                 .child(text(p.card.title.clone()).size(22.0).bold())
-                .child(text(format!("{} \u{b7} {}", p.kind, p.version)).class("fs-c-sub")),
+                .child(text(format!("{} \u{b7} {}", p.kind, p.version)).class("fs-c-sub"))
+                .children(prerelease_note(&p.card)),
         )
         .child(buttons(
             &p,

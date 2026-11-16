@@ -59,6 +59,10 @@ fn mark(card: &Card, selected: bool) -> Div {
     let (word, class) = match card.state {
         CardState::UpdateAvailable => ("Update", "fs-c-warn"),
         CardState::Installed => ("Installed", "fs-c-ok"),
+        CardState::NotInstalled if card.prerelease => (
+            crate::words_front::prerelease(crate::words_front::Lang::current()),
+            "fs-c-warn",
+        ),
         CardState::NotInstalled => ("", ""),
     };
     let version = card

@@ -225,3 +225,35 @@ fn the_name_without_a_language_wins() {
         "FreeSynergy.A"
     );
 }
+
+fn one_release(attrs: &str, component_type: &str) -> String {
+    format!(
+        r#"<components version="1.0"><component {component_type}><id>a</id><releases>
+ <release version="0.0.3" {attrs}><artifacts><artifact type="binary"><location>l</location><checksum type="sha256">3</checksum></artifact></artifacts></release></releases>
+ <custom><value key="fs:signature">s</value></custom></component></components>"#
+    )
+}
+
+#[test]
+fn release_type_development_is_a_prerelease_stable_and_missing_are_not() {
+    let dev = parse_catalog(&one_release(r#"type="development""#, "")).unwrap();
+    assert!(dev.entries[0].details.prerelease);
+    let stable = parse_catalog(&one_release(r#"type="stable""#, "")).unwrap();
+    assert!(!stable.entries[0].details.prerelease);
+    let none = parse_catalog(&one_release("", "")).unwrap();
+    assert!(!none.entries[0].details.prerelease);
+    // `type` of the COMPONENT (desktop-application ...) is not the release type
+    let other = parse_catalog(&one_release("", r#"type="development""#)).unwrap();
+    assert!(!other.entries[0].details.prerelease);
+}
+
+#[test]
+fn only_the_chosen_release_decides() {
+    let xml = r#"<components version="1.0"><component><id>a</id><releases>
+ <release version="0.0.2" type="development"><artifacts><artifact type="binary"><location>o</location><checksum type="sha256">2</checksum></artifact></artifacts></release>
+ <release version="1.0.0" type="stable"><artifacts><artifact type="binary"><location>n</location><checksum type="sha256">3</checksum></artifact></artifacts></release></releases>
+ <custom><value key="fs:signature">s</value></custom></component></components>"#;
+    let c = parse_catalog(xml).unwrap();
+    assert_eq!(c.entries[0].version.to_string(), "1.0.0");
+    assert!(!c.entries[0].details.prerelease);
+}

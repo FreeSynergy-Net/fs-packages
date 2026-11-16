@@ -401,7 +401,7 @@ additional cross-check (`fs-packages owner`, only for a path that is none of our
 ## Storefront, variant B (frontend-store, 2026-11-12)
 The window is a launcher-like storefront after the references in `.scratch/frontends/vorbilder-store/` (ArtCraft Launcher for the
 shape: grid or table, filter tabs with counts, sort, search; Flathub for the package page). Data first, then looks:
-- **Data:** `PackageRow` carries `details` (`fs_packages_core::Details`: size, release date, changes per version, origin, trust level,
+- **Data:** `PackageRow` carries `details` (`fs_packages_core::Details`: size, release date, changes per version, origin, trust level, `prerelease` = `<release type="development">`, shown as the badge "Pre-release" / "Vorabversion", never filtered; not on the wire yet,
   capabilities, pictures with a clear licence, description as text or wiki block) and `native` (rpm/deb offered). Everything the catalog
   does not say is shown as "unknown", never guessed. Capabilities (offers, needs, can use) are kept apart from rights; each need is
   answered by the resolver of the core (one provider, a choice, or nobody).
