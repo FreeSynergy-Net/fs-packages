@@ -17,7 +17,7 @@ fs-packages-catalog = { path = "../fs-packages-catalog" }
 fs-packages-engine = { path = "../fs-packages-engine" }
 fs-packages-pgp = { path = "../fs-packages-pgp" }
 fs-packages-sources = { path = "../fs-packages-sources" }
-fs-interfaces = { git = "https://github.com/FreeSynergy/fs-interfaces", tag = "v0.0.19", features = ["rpc"] }
+fs-interfaces = { git = "https://github.com/FreeSynergy/fs-interfaces", tag = "v0.0.22", features = ["rpc"] }
 capnp = "0.27"
 capnp-rpc = "0.27"
 tokio = { version = "1", features = ["rt"] }

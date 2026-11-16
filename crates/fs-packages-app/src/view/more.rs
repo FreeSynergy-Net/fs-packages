@@ -3,10 +3,9 @@
 
 use std::sync::Arc;
 
-use fs_components::blinc::cn::components::dropdown_menu::{DropdownAlign, dropdown_menu_custom};
-use fs_components::blinc::layout::ElementBuilder;
 use fs_components::blinc::layout::div::{Div, div};
 use fs_components::blinc::layout::prelude::text;
+use fs_components_widgets::dropdown::{Align, dropdown};
 
 use crate::launcher::Launcher;
 use crate::model::{Card, CardState};
@@ -32,18 +31,14 @@ fn trigger(open: bool) -> Div {
 }
 
 /// The three-dot menu of `card`.
-pub(super) fn more_menu(
-    card: &Card,
-    shared: &Shared,
-    launcher: &Arc<dyn Launcher>,
-) -> impl ElementBuilder + use<> {
+pub(super) fn more_menu(card: &Card, shared: &Shared, launcher: &Arc<dyn Launcher>) -> Div {
     let (describe, repository, remove) =
         (Arc::clone(shared), Arc::clone(shared), Arc::clone(shared));
     let launcher = Arc::clone(launcher);
     let (n1, n2, n3) = (card.name.clone(), card.name.clone(), card.name.clone());
-    let menu = dropdown_menu_custom(trigger)
-        .align(DropdownAlign::End)
-        .min_width(220.0)
+    let menu = dropdown(trigger)
+        .align(Align::End)
+        .width(220.0)
         .item(words::MORE_DESCRIPTION, move || {
             locked(&describe).open_page(&n1);
             rebuild();
@@ -54,11 +49,12 @@ pub(super) fn more_menu(
         })
         .separator();
     if card.state == CardState::NotInstalled {
-        menu.item_disabled(words::MORE_UNINSTALL)
+        menu.item_disabled(words::MORE_UNINSTALL).into_element()
     } else {
         menu.item(words::MORE_UNINSTALL, move || {
             locked(&remove).ask_remove_preview(&n3);
             rebuild();
         })
+        .into_element()
     }
 }

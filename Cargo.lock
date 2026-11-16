@@ -1991,8 +1991,8 @@ dependencies = [
 
 [[package]]
 name = "fs-components"
-version = "0.0.23"
-source = "git+https://github.com/FreeSynergy/fs-components?tag=v0.0.23#57ddfd36091a5f1b475f3d15093a9245cab5f3a9"
+version = "0.0.24"
+source = "git+https://github.com/FreeSynergy/fs-components?tag=v0.0.24#f3cd982f66864fa35133b161aa88e01339d0205d"
 dependencies = [
  "blinc_animation",
  "blinc_app",
@@ -2005,8 +2005,8 @@ dependencies = [
 
 [[package]]
 name = "fs-components-app"
-version = "0.0.23"
-source = "git+https://github.com/FreeSynergy/fs-components?tag=v0.0.23#57ddfd36091a5f1b475f3d15093a9245cab5f3a9"
+version = "0.0.24"
+source = "git+https://github.com/FreeSynergy/fs-components?tag=v0.0.24#f3cd982f66864fa35133b161aa88e01339d0205d"
 dependencies = [
  "blinc_app",
  "blinc_cn",
@@ -2021,8 +2021,8 @@ dependencies = [
 
 [[package]]
 name = "fs-components-mf2"
-version = "0.0.23"
-source = "git+https://github.com/FreeSynergy/fs-components?tag=v0.0.23#57ddfd36091a5f1b475f3d15093a9245cab5f3a9"
+version = "0.0.24"
+source = "git+https://github.com/FreeSynergy/fs-components?tag=v0.0.24#f3cd982f66864fa35133b161aa88e01339d0205d"
 dependencies = [
  "fs-components-words",
  "mf2",
@@ -2030,8 +2030,8 @@ dependencies = [
 
 [[package]]
 name = "fs-components-primitives"
-version = "0.0.23"
-source = "git+https://github.com/FreeSynergy/fs-components?tag=v0.0.23#57ddfd36091a5f1b475f3d15093a9245cab5f3a9"
+version = "0.0.24"
+source = "git+https://github.com/FreeSynergy/fs-components?tag=v0.0.24#f3cd982f66864fa35133b161aa88e01339d0205d"
 dependencies = [
  "blinc_cn",
  "blinc_core",
@@ -2043,8 +2043,8 @@ dependencies = [
 
 [[package]]
 name = "fs-components-render"
-version = "0.0.23"
-source = "git+https://github.com/FreeSynergy/fs-components?tag=v0.0.23#57ddfd36091a5f1b475f3d15093a9245cab5f3a9"
+version = "0.0.24"
+source = "git+https://github.com/FreeSynergy/fs-components?tag=v0.0.24#f3cd982f66864fa35133b161aa88e01339d0205d"
 dependencies = [
  "blinc_app",
  "blinc_cn",
@@ -2061,13 +2061,13 @@ dependencies = [
 
 [[package]]
 name = "fs-components-styles"
-version = "0.0.23"
-source = "git+https://github.com/FreeSynergy/fs-components?tag=v0.0.23#57ddfd36091a5f1b475f3d15093a9245cab5f3a9"
+version = "0.0.24"
+source = "git+https://github.com/FreeSynergy/fs-components?tag=v0.0.24#f3cd982f66864fa35133b161aa88e01339d0205d"
 
 [[package]]
 name = "fs-components-widgets"
-version = "0.0.23"
-source = "git+https://github.com/FreeSynergy/fs-components?tag=v0.0.23#57ddfd36091a5f1b475f3d15093a9245cab5f3a9"
+version = "0.0.24"
+source = "git+https://github.com/FreeSynergy/fs-components?tag=v0.0.24#f3cd982f66864fa35133b161aa88e01339d0205d"
 dependencies = [
  "blinc_cn",
  "blinc_core",
@@ -2085,13 +2085,13 @@ dependencies = [
 
 [[package]]
 name = "fs-components-words"
-version = "0.0.23"
-source = "git+https://github.com/FreeSynergy/fs-components?tag=v0.0.23#57ddfd36091a5f1b475f3d15093a9245cab5f3a9"
+version = "0.0.24"
+source = "git+https://github.com/FreeSynergy/fs-components?tag=v0.0.24#f3cd982f66864fa35133b161aa88e01339d0205d"
 
 [[package]]
 name = "fs-interfaces"
-version = "0.0.1"
-source = "git+https://github.com/FreeSynergy/fs-interfaces?tag=v0.0.19#90e62c30ad3af06beaa4edabce14e1448fdce9f3"
+version = "0.0.22"
+source = "git+https://github.com/FreeSynergy/fs-interfaces?tag=v0.0.22#7743056396ffa80bc77d3af9d1946229dd1f6155"
 dependencies = [
  "capnp",
  "capnp-rpc",
