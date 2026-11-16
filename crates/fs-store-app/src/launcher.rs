@@ -54,10 +54,19 @@ fn detached(mut command: Command) -> Command {
     command
 }
 
+/// The words after `setsid`: `-f <program>` and the one argument that is asked for. Starting a program from the
+/// store gives it NO argument (no `--facet`, no source): the program starts as its desktop entry would start it.
+#[must_use]
+pub fn setsid_words(program: &Path, arg: Option<&str>) -> Vec<std::ffi::OsString> {
+    let mut words = vec!["-f".into(), program.as_os_str().to_owned()];
+    words.extend(arg.map(Into::into));
+    words
+}
+
 /// Runs `program arg` detached and says how it started; the child is reaped in the background.
 fn run_detached(program: &Path, arg: Option<&str>) -> Result<(), String> {
     let mut setsid = Command::new("setsid");
-    setsid.arg("-f").arg(program).args(arg);
+    setsid.args(setsid_words(program, arg));
     match detached(setsid).status() {
         Ok(status) if status.success() => Ok(()),
         Ok(status) => Err(format!("setsid ended with {status}")),
