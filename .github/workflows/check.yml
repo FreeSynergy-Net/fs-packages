@@ -7,6 +7,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: true
+
 jobs:
   check:
     uses: FreeSynergy/fs-release/.github/workflows/check.yml@f1211066d0072c6319678659e845c19ae4384bd0
