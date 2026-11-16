@@ -506,3 +506,9 @@ Craft style and the theme adapter (`fs_components_render::use_style`) come from 
 - **Not used yet:** the new blocks (license dialog, confirm dialog, toast, switch, segmented) wait for the software pilot, stage 3.
 - **Only visible effect:** Craft uses the system mono font when JetBrains Mono is not installed (fs-components 0.0.23, 16b: mono list); text about 1 px lower, layout and colours the same.
 - **CI:** fs-release pinned to v0.0.9 (`6ebd3f8`) in `check.yml`, `release.yml` and `typing-test.yml`.
+
+## Icon cache (P1, unreleased)
+- Pattern: content-addressed cache. `fs-packages-engine::icon_cache`: `<cache>/icons/<sha256>.png`, the name is the hash of the signed catalog (`<icon type="remote" fs-sha256>`), so a file is right by its name and needs no expiry. `<cache>` = `<root>/cache` when `FS_PACKAGES_ROOT` is set, else `$XDG_CACHE_HOME/fs-packages`, else `~/.cache/fs-packages`.
+- When: after `read_source` (signature and freshness), on the worker thread of the refresh AFTER the list is drawn (`StoreBackend::load_icons`, a default method of the app's own port; `packages_v1` is untouched). https only, at most 1 MiB, PNG header, hash equal; four at a time; written as temp file + rename. A failure is told once per package as a `Problem::Backend` line, never silent; the tile keeps the letter.
+- Which icon: cache file of the offer's hash, else `<root>/icons/<name>.png` (kept at install, used by the menu entries), else the letter. Cleaning: after a read of all sources, files named like a hash that no loaded entry names and older than 30 days go (the clock is handed in for tests).
+- Not done: the Compact/Storefront frontends are unchanged; only the source of `Card::icon` changed. The window is redrawn after the fetch, a second window of the same cache is not coordinated (rename is atomic, so a half file is never seen).

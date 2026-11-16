@@ -21,3 +21,7 @@ fs-components-styles = { git = "https://github.com/FreeSynergy/fs-components", t
 fs-components-widgets = { git = "https://github.com/FreeSynergy/fs-components", tag = "v0.0.24" }
 fs-components-primitives = { git = "https://github.com/FreeSynergy/fs-components", tag = "v0.0.24" }
 fs-interfaces = { git = "https://github.com/FreeSynergy/fs-interfaces", tag = "v0.0.22", features = ["rpc"] }
+
+[dev-dependencies]
+sha2 = "0.10"
+tempfile = "3"

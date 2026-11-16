@@ -233,6 +233,12 @@ pub trait StoreBackend: Send + Sync {
     fn icon_path(&self, _name: &str) -> Option<std::path::PathBuf> {
         None
     }
+    /// Fetches, after a read of the sources, the icons their signed catalogs name into the icon cache and tidies the cache.
+    /// Slow (network): the window calls it on a worker thread, never under its lock. Returns what did not work, one line per
+    /// package. Default: nothing to do.
+    fn load_icons(&self) -> Vec<String> {
+        Vec::new()
+    }
     /// Takes the program `name` away (rpm: `pkexec dnf remove`; unpacked: deleted) and forgets it in the
     /// register. The data of the person stays.
     ///

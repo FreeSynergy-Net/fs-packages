@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### English
+- **Icon cache (P1):** the tiles show the icon of a package before it is installed. After the signed catalogs are read (signature and freshness checked), the icons they name are fetched in the background (https only, at most 1 MiB, PNG header, SHA-256 equal to the hash in the signed catalog; four at a time) into `<cache>/icons/<sha256>.png`. `<cache>` is `$XDG_CACHE_HOME/fs-packages` (else `~/.cache/fs-packages`), or `<root>/cache` when `FS_PACKAGES_ROOT` is set. The file is named by the hash, so it needs no expiry and a new icon is a new file. What cannot be taken (wrong hash, not a PNG, too large, http, network) is not stored and is told once per package in the problem list of the window; the tile keeps its letter. A tile shows the cached icon, else the installed one (`<root>/icons/<name>.png`), else the letter. Files no loaded catalog entry names are removed after 30 days (only after all sources were read; only files named like a hash). The CLI install takes the icon bytes from the cache when they are there (checked again against the hash). No change to `packages_v1`.
+
+### Deutsch
+- **Icon-Cache (P1):** Die Kacheln zeigen das Icon eines Pakets schon vor der Installation. Nach dem Lesen der signierten Kataloge (Signatur und Frische geprüft) werden die genannten Icons im Hintergrund geholt (nur https, höchstens 1 MiB, PNG-Kopf, SHA-256 gleich der Prüfsumme im signierten Katalog; vier gleichzeitig) nach `<cache>/icons/<sha256>.png`. `<cache>` ist `$XDG_CACHE_HOME/fs-packages` (sonst `~/.cache/fs-packages`), bei gesetztem `FS_PACKAGES_ROOT` `<root>/cache`. Der Dateiname ist die Prüfsumme: kein Ablaufdatum nötig, ein neues Icon ist eine neue Datei. Was nicht übernommen werden kann (falsche Prüfsumme, kein PNG, zu groß, http, Netz) wird nicht gespeichert und einmal je Paket in der Problemliste des Fensters gemeldet; die Kachel behält den Buchstaben. Die Kachel zeigt das Cache-Icon, sonst das installierte (`<root>/icons/<name>.png`), sonst den Buchstaben. Dateien, die kein geladener Katalogeintrag mehr nennt, werden nach 30 Tagen gelöscht (erst nachdem alle Quellen gelesen wurden; nur Dateien mit Prüfsummen-Namen). Die CLI-Installation nimmt die Icon-Bytes aus dem Cache, wenn sie dort liegen (erneut gegen die Prüfsumme geprüft). `packages_v1` bleibt unverändert.
+
 ## 0.0.18
 
 ### English

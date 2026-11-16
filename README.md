@@ -25,6 +25,10 @@ follows at the next start.
 - **Install** is one click on "Install", then the question (what is added, size, source, rights), then **Install now**. Nothing asks again; for a system install (rpm/deb) the question says that the system asks for your password next.
 - **Start** is the overview (updates, new, not-supported entries) and has no number. **Programs**, **Frontends**, **Components**, **Themes**, ... list ALL packages of their kind; the number is what the list shows.
 
+### Icon cache (unreleased)
+
+Icons of the offers are fetched after the catalog is read (https, PNG, at most 1 MiB, SHA-256 of the signed catalog) into `~/.cache/fs-packages/icons/<sha256>.png` (`<root>/cache` when `FS_PACKAGES_ROOT` is set); a tile shows cache, else installed icon, else the letter. A failed icon is listed in the problems of the window. Unused files are removed after 30 days.
+
 ## Commands and the install form
 
 The commands of a program and its facets (`~/.local/bin/<name>`) follow the form that is active: `/usr/bin` for an rpm/deb,

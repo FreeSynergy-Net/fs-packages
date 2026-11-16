@@ -167,7 +167,13 @@ fn finish(root: &Path, f: &Found, v: fs_packages_core::Version, signer: &str) ->
     let mut problems = Vec::new();
     // The icon comes with a hash in the signed catalog; one that does not match is not stored.
     if let Some(icon) = &f.entry.icon {
-        match AnyFetch.get(&icon.url) {
+        // The icon cache of the window may hold it already (checked against its hash again): no second download.
+        let cached = fs_packages_engine::cached_bytes(
+            &fs_packages_engine::cache_dir_from_environment(),
+            &icon.sha256,
+        )
+        .map_or_else(|| AnyFetch.get(&icon.url), Ok);
+        match cached {
             Ok(bytes) => {
                 match fs_packages_engine::store_icon(root, &f.name, &bytes, &icon.sha256) {
                     Ok(true) => {}

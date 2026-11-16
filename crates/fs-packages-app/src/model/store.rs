@@ -160,6 +160,12 @@ impl StoreModel {
         &self.problems
     }
 
+    /// Tells what did not work while icons were fetched (one line per package), in the same place as the other problems.
+    pub fn add_icon_problems(&mut self, lines: Vec<String>) {
+        self.problems
+            .extend(lines.into_iter().map(Problem::Backend));
+    }
+
     /// The text of the field for a new source.
     #[must_use]
     pub fn new_source(&self) -> &str {

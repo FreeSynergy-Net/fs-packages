@@ -5,6 +5,7 @@
 use std::fs;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex, PoisonError};
+use std::time::SystemTime;
 
 use fs_packages_catalog::parse_catalog_in;
 use fs_packages_core::{SignaturePolicy, SignatureVerifier, SourceId, SourceRepository, Version};
@@ -17,6 +18,7 @@ use crate::backend::{
     BackendError, InstalledDetails, InstalledRow, JobError, JobKind, Listing, PackageRow, Phase,
     Prepared, SourceRow, StoreBackend,
 };
+use crate::engine_icons::{IconSource, IconWishes};
 
 pub(crate) struct AnyFetch;
 
@@ -33,31 +35,35 @@ impl Fetch for AnyFetch {
 /// The engine, working below `root`.
 #[derive(Debug, Clone)]
 pub struct EngineBackend {
-    root: PathBuf,
+    pub(crate) root: PathBuf,
     /// Names the sources offered last time: they are looked up in rpm too.
-    offered: Arc<Mutex<Vec<String>>>,
+    pub(crate) offered: Arc<Mutex<Vec<String>>>,
+    /// The folder of the icon cache (`<cache>/icons/<sha256>.png`).
+    pub(crate) cache: PathBuf,
+    pub(crate) icons: Arc<Mutex<IconWishes>>,
+    pub(crate) icon_source: IconSource,
 }
 
 impl EngineBackend {
-    /// Works below `root` (`sources.toml`, `packages/`, `current/`).
+    /// Works below `root` (`sources.toml`, `packages/`, `current/`); the icon cache is `<root>/cache`.
     #[must_use]
     pub fn new(root: PathBuf) -> Self {
-        Self {
-            root,
-            offered: Arc::default(),
-        }
+        let cache = root.join("cache");
+        Self::with_cache(root, cache)
     }
 
-    /// `FS_PACKAGES_ROOT`, or `~/.local/share/fs-packages`, like the CLI.
+    /// `FS_PACKAGES_ROOT`, or `~/.local/share/fs-packages`, like the CLI. The icon cache is `<root>/cache` when
+    /// `FS_PACKAGES_ROOT` is set, else `$XDG_CACHE_HOME/fs-packages` (`~/.cache/fs-packages`).
     #[must_use]
     pub fn from_environment() -> Self {
-        Self::new(std::env::var_os("FS_PACKAGES_ROOT").map_or_else(
+        let root = std::env::var_os("FS_PACKAGES_ROOT").map_or_else(
             || {
                 PathBuf::from(std::env::var_os("HOME").unwrap_or_default())
                     .join(".local/share/fs-packages")
             },
             PathBuf::from,
-        ))
+        );
+        Self::with_cache(root, fs_packages_engine::cache_dir_from_environment())
     }
 
     pub(crate) fn root(&self) -> &std::path::Path {
@@ -166,9 +172,11 @@ impl StoreBackend for EngineBackend {
 
     fn available(&self) -> Result<Listing, BackendError> {
         let mut listing = Listing::default();
+        let mut wanted = Vec::new();
         for source in self.file()?.list().into_iter().filter(|s| s.enabled) {
             match self.read_source(&source.url) {
                 Ok((catalog, _, _)) => {
+                    wanted.extend(crate::engine_icons::wanted_icons(&catalog));
                     listing
                         .packages
                         .extend(catalog.entries.into_iter().map(|e| {
@@ -199,6 +207,10 @@ impl StoreBackend for EngineBackend {
         }
         *self.offered.lock().unwrap_or_else(PoisonError::into_inner) =
             listing.packages.iter().map(|p| p.name.clone()).collect();
+        *self.icons.lock().unwrap_or_else(PoisonError::into_inner) = IconWishes {
+            wanted,
+            all_read: listing.unreadable.is_empty(),
+        };
         Ok(listing)
     }
 
@@ -223,8 +235,15 @@ impl StoreBackend for EngineBackend {
         if name.is_empty() || name.contains(['/', '\\']) || name.starts_with('.') {
             return None;
         }
-        let path = self.root.join("icons").join(format!("{name}.png"));
-        path.is_file().then_some(path)
+        // First the icon of the signed offer in the cache, then the one kept at install, else none (the letter).
+        self.cached_icon_of(name).or_else(|| {
+            let path = self.root.join("icons").join(format!("{name}.png"));
+            path.is_file().then_some(path)
+        })
+    }
+
+    fn load_icons(&self) -> Vec<String> {
+        self.load_icons_at(SystemTime::now())
     }
 
     fn details(&self, name: &str) -> InstalledDetails {
