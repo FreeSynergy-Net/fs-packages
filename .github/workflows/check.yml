@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   check:
-    uses: FreeSynergy/fs-release/.github/workflows/check.yml@f1211066d0072c6319678659e845c19ae4384bd0
+    uses: FreeSynergy/fs-release/.github/workflows/check.yml@6ebd3f8f5dfc8a0be08866416169defa48aea8f1 # v0.0.9
     with:
       # Software Vulkan (lavapipe): tests/window_draws.rs draws the shell into a picture; a runner has no GPU
       software-gpu: true

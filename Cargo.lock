@@ -1991,8 +1991,8 @@ dependencies = [
 
 [[package]]
 name = "fs-components"
-version = "0.0.13"
-source = "git+https://github.com/FreeSynergy/fs-components?tag=v0.0.13#c97eca0d2ae5a61801ee2e71c0f2eb9a4f7b8111"
+version = "0.0.23"
+source = "git+https://github.com/FreeSynergy/fs-components?tag=v0.0.23#57ddfd36091a5f1b475f3d15093a9245cab5f3a9"
 dependencies = [
  "blinc_animation",
  "blinc_app",
@@ -2005,22 +2005,33 @@ dependencies = [
 
 [[package]]
 name = "fs-components-app"
-version = "0.0.13"
-source = "git+https://github.com/FreeSynergy/fs-components?tag=v0.0.13#c97eca0d2ae5a61801ee2e71c0f2eb9a4f7b8111"
+version = "0.0.23"
+source = "git+https://github.com/FreeSynergy/fs-components?tag=v0.0.23#57ddfd36091a5f1b475f3d15093a9245cab5f3a9"
 dependencies = [
  "blinc_app",
  "blinc_cn",
  "blinc_core",
  "blinc_layout",
  "blinc_theme",
+ "fs-components-mf2",
  "fs-components-render",
  "fs-components-widgets",
+ "fs-components-words",
+]
+
+[[package]]
+name = "fs-components-mf2"
+version = "0.0.23"
+source = "git+https://github.com/FreeSynergy/fs-components?tag=v0.0.23#57ddfd36091a5f1b475f3d15093a9245cab5f3a9"
+dependencies = [
+ "fs-components-words",
+ "mf2",
 ]
 
 [[package]]
 name = "fs-components-primitives"
-version = "0.0.13"
-source = "git+https://github.com/FreeSynergy/fs-components?tag=v0.0.13#c97eca0d2ae5a61801ee2e71c0f2eb9a4f7b8111"
+version = "0.0.23"
+source = "git+https://github.com/FreeSynergy/fs-components?tag=v0.0.23#57ddfd36091a5f1b475f3d15093a9245cab5f3a9"
 dependencies = [
  "blinc_cn",
  "blinc_core",
@@ -2032,8 +2043,8 @@ dependencies = [
 
 [[package]]
 name = "fs-components-render"
-version = "0.0.13"
-source = "git+https://github.com/FreeSynergy/fs-components?tag=v0.0.13#c97eca0d2ae5a61801ee2e71c0f2eb9a4f7b8111"
+version = "0.0.23"
+source = "git+https://github.com/FreeSynergy/fs-components?tag=v0.0.23#57ddfd36091a5f1b475f3d15093a9245cab5f3a9"
 dependencies = [
  "blinc_app",
  "blinc_cn",
@@ -2041,20 +2052,22 @@ dependencies = [
  "blinc_layout",
  "blinc_noto_emoji",
  "blinc_theme",
+ "fontdb",
  "fs-components-styles",
  "image",
+ "ttf-parser 0.24.1",
  "wgpu",
 ]
 
 [[package]]
 name = "fs-components-styles"
-version = "0.0.13"
-source = "git+https://github.com/FreeSynergy/fs-components?tag=v0.0.13#c97eca0d2ae5a61801ee2e71c0f2eb9a4f7b8111"
+version = "0.0.23"
+source = "git+https://github.com/FreeSynergy/fs-components?tag=v0.0.23#57ddfd36091a5f1b475f3d15093a9245cab5f3a9"
 
 [[package]]
 name = "fs-components-widgets"
-version = "0.0.13"
-source = "git+https://github.com/FreeSynergy/fs-components?tag=v0.0.13#c97eca0d2ae5a61801ee2e71c0f2eb9a4f7b8111"
+version = "0.0.23"
+source = "git+https://github.com/FreeSynergy/fs-components?tag=v0.0.23#57ddfd36091a5f1b475f3d15093a9245cab5f3a9"
 dependencies = [
  "blinc_cn",
  "blinc_core",
@@ -2062,11 +2075,18 @@ dependencies = [
  "blinc_noto_emoji",
  "blinc_theme",
  "fontdb",
+ "fs-components-mf2",
  "fs-components-primitives",
  "fs-components-styles",
+ "fs-components-words",
  "image",
  "ttf-parser 0.24.1",
 ]
+
+[[package]]
+name = "fs-components-words"
+version = "0.0.23"
+source = "git+https://github.com/FreeSynergy/fs-components?tag=v0.0.23#57ddfd36091a5f1b475f3d15093a9245cab5f3a9"
 
 [[package]]
 name = "fs-interfaces"
@@ -2106,7 +2126,7 @@ dependencies = [
 
 [[package]]
 name = "fs-store"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "fs-store-app",
  "fs-store-cli",
@@ -2117,7 +2137,7 @@ dependencies = [
 
 [[package]]
 name = "fs-store-app"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "fs-components",
  "fs-components-app",
@@ -2135,7 +2155,7 @@ dependencies = [
 
 [[package]]
 name = "fs-store-catalog"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "fs-store-core",
  "roxmltree",
@@ -2143,7 +2163,7 @@ dependencies = [
 
 [[package]]
 name = "fs-store-cli"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "fs-store-catalog",
  "fs-store-core",
@@ -2156,7 +2176,7 @@ dependencies = [
 
 [[package]]
 name = "fs-store-client"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "fs-store-sources",
  "tempfile",
@@ -2164,11 +2184,11 @@ dependencies = [
 
 [[package]]
 name = "fs-store-core"
-version = "0.0.16"
+version = "0.0.17"
 
 [[package]]
 name = "fs-store-engine"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "capnp",
  "capnp-rpc",
@@ -2191,7 +2211,7 @@ dependencies = [
 
 [[package]]
 name = "fs-store-pgp"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "fs-store-core",
  "pgp",
@@ -2200,7 +2220,7 @@ dependencies = [
 
 [[package]]
 name = "fs-store-server"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "capnp",
  "capnp-rpc",
@@ -2216,7 +2236,7 @@ dependencies = [
 
 [[package]]
 name = "fs-store-sources"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "fs-store-core",
  "serde",
@@ -2226,7 +2246,7 @@ dependencies = [
 
 [[package]]
 name = "fs-store-tuf"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "tempfile",
  "tokio",
@@ -2236,7 +2256,7 @@ dependencies = [
 
 [[package]]
 name = "fs-store-tuf-publish"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "aws-lc-rs",
  "fs-store-tuf",
@@ -4402,6 +4422,107 @@ dependencies = [
  "log",
  "objc",
  "paste",
+]
+
+[[package]]
+name = "mf2"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c6dbb36ba8afa139fad8f8c9cd5ba3c4d6a09a25a32f4060cf202eb6a22891e4"
+dependencies = [
+ "mf2-catalog",
+ "mf2-fn-number",
+ "mf2-host-std",
+ "mf2-locale-data",
+ "mf2-macros",
+ "mf2-model",
+ "mf2-runtime",
+ "mf2-syntax",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "mf2-catalog"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1c5d4d0ef13495b632f6da6d36a81a03a762c01cef4dfef59882797431877450"
+dependencies = [
+ "mf2-model",
+ "thiserror 2.0.21",
+ "unicode-normalization",
+]
+
+[[package]]
+name = "mf2-fn-number"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e41b1dfd7012bbd858f048caf0c92a5bbf7b4cc030fbd89cffc707e5e395f3c0"
+dependencies = [
+ "mf2-catalog",
+ "mf2-runtime",
+]
+
+[[package]]
+name = "mf2-host-std"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "adff3eb937a5bf4f46e3c5dc480c2691353bff5b564ea5f4d03e9643e05ac763"
+dependencies = [
+ "mf2-runtime",
+]
+
+[[package]]
+name = "mf2-locale-data"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8002a888fe308401128402d3de323394128adcdab8ea72395edf13078fb7775b"
+dependencies = [
+ "mf2-catalog",
+ "mf2-model",
+ "thiserror 2.0.21",
+ "unicode-properties",
+]
+
+[[package]]
+name = "mf2-macros"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eb8ca11e89e35364090e2ea9f766176744c8ec995869c5d976ca69b173feecf0"
+dependencies = [
+ "mf2-catalog",
+ "proc-macro2",
+ "quote",
+ "syn 3.0.10",
+ "thiserror 2.0.21",
+ "unicode-normalization",
+]
+
+[[package]]
+name = "mf2-model"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cea1106b9fb39038df5c599f18fe9abec8eed06ee109be38a3e8c03c49ec85ec"
+
+[[package]]
+name = "mf2-runtime"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f3af896a4a7170c2814d49a27db3b333de2ead70dcc032ecf38142e098593eb8"
+dependencies = [
+ "mf2-catalog",
+ "mf2-model",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "mf2-syntax"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cd450ea575a3653ac3db85f3b93d4fc4854fba8a1bf62fac48b2536a5ee8da2c"
+dependencies = [
+ "mf2-model",
+ "thiserror 2.0.21",
+ "unicode-normalization",
 ]
 
 [[package]]
