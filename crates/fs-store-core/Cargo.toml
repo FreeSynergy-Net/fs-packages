@@ -1,9 +1,0 @@
-[package]
-name = "fs-store-core"
-description = "FreeSynergy launcher core: traits and value types, no input or output"
-version.workspace = true
-edition.workspace = true
-license.workspace = true
-rust-version.workspace = true
-
-[dependencies]

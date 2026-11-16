@@ -2125,18 +2125,18 @@ dependencies = [
 ]
 
 [[package]]
-name = "fs-store"
+name = "fs-packages"
 version = "0.0.17"
 dependencies = [
- "fs-store-app",
- "fs-store-cli",
- "fs-store-core",
- "fs-store-engine",
- "fs-store-server",
+ "fs-packages-app",
+ "fs-packages-cli",
+ "fs-packages-core",
+ "fs-packages-engine",
+ "fs-packages-server",
 ]
 
 [[package]]
-name = "fs-store-app"
+name = "fs-packages-app"
 version = "0.0.17"
 dependencies = [
  "fs-components",
@@ -2146,58 +2146,58 @@ dependencies = [
  "fs-components-styles",
  "fs-components-widgets",
  "fs-interfaces",
- "fs-store-catalog",
- "fs-store-core",
- "fs-store-engine",
- "fs-store-pgp",
- "fs-store-sources",
+ "fs-packages-catalog",
+ "fs-packages-core",
+ "fs-packages-engine",
+ "fs-packages-pgp",
+ "fs-packages-sources",
 ]
 
 [[package]]
-name = "fs-store-catalog"
+name = "fs-packages-catalog"
 version = "0.0.17"
 dependencies = [
- "fs-store-core",
+ "fs-packages-core",
  "roxmltree",
 ]
 
 [[package]]
-name = "fs-store-cli"
+name = "fs-packages-cli"
 version = "0.0.17"
 dependencies = [
- "fs-store-catalog",
- "fs-store-core",
- "fs-store-engine",
- "fs-store-pgp",
- "fs-store-sources",
- "fs-store-tuf",
+ "fs-packages-catalog",
+ "fs-packages-core",
+ "fs-packages-engine",
+ "fs-packages-pgp",
+ "fs-packages-sources",
+ "fs-packages-tuf",
  "tempfile",
 ]
 
 [[package]]
-name = "fs-store-client"
+name = "fs-packages-client"
 version = "0.0.17"
 dependencies = [
- "fs-store-sources",
+ "fs-packages-sources",
  "tempfile",
 ]
 
 [[package]]
-name = "fs-store-core"
+name = "fs-packages-core"
 version = "0.0.17"
 
 [[package]]
-name = "fs-store-engine"
+name = "fs-packages-engine"
 version = "0.0.17"
 dependencies = [
  "capnp",
  "capnp-rpc",
  "flate2",
  "fs-interfaces",
- "fs-store-catalog",
- "fs-store-core",
- "fs-store-pgp",
- "fs-store-sources",
+ "fs-packages-catalog",
+ "fs-packages-core",
+ "fs-packages-pgp",
+ "fs-packages-sources",
  "gix",
  "pgp",
  "rand 0.8.8",
@@ -2210,42 +2210,42 @@ dependencies = [
 ]
 
 [[package]]
-name = "fs-store-pgp"
+name = "fs-packages-pgp"
 version = "0.0.17"
 dependencies = [
- "fs-store-core",
+ "fs-packages-core",
  "pgp",
  "rand 0.8.8",
 ]
 
 [[package]]
-name = "fs-store-server"
+name = "fs-packages-server"
 version = "0.0.17"
 dependencies = [
  "capnp",
  "capnp-rpc",
  "fs-interfaces",
- "fs-store-catalog",
- "fs-store-core",
- "fs-store-engine",
- "fs-store-pgp",
- "fs-store-sources",
+ "fs-packages-catalog",
+ "fs-packages-core",
+ "fs-packages-engine",
+ "fs-packages-pgp",
+ "fs-packages-sources",
  "tempfile",
  "tokio",
 ]
 
 [[package]]
-name = "fs-store-sources"
+name = "fs-packages-sources"
 version = "0.0.17"
 dependencies = [
- "fs-store-core",
+ "fs-packages-core",
  "serde",
  "tempfile",
  "toml 0.9.12+spec-1.1.0",
 ]
 
 [[package]]
-name = "fs-store-tuf"
+name = "fs-packages-tuf"
 version = "0.0.17"
 dependencies = [
  "tempfile",
@@ -2255,11 +2255,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "fs-store-tuf-publish"
+name = "fs-packages-tuf-publish"
 version = "0.0.17"
 dependencies = [
  "aws-lc-rs",
- "fs-store-tuf",
+ "fs-packages-tuf",
  "jiff",
  "serde_json",
  "tempfile",

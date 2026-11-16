@@ -7,5 +7,5 @@ version = "0.0.17"
 authors = ["FreeSynergy <support@freesynergy.net>"]
 edition = "2024"
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/FreeSynergy/fs-store"
+repository = "https://github.com/FreeSynergy/fs-packages"
 rust-version = "1.89"

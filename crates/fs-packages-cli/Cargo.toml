@@ -1,0 +1,20 @@
+[package]
+name = "fs-packages-cli"
+description = "FreeSynergy.Packages commands (install, update, sources ...) as a library; the binary is crate fs-packages"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+fs-packages-core = { path = "../fs-packages-core" }
+fs-packages-catalog = { path = "../fs-packages-catalog" }
+fs-packages-engine = { path = "../fs-packages-engine" }
+fs-packages-pgp = { path = "../fs-packages-pgp" }
+fs-packages-sources = { path = "../fs-packages-sources" }
+fs-packages-tuf = { path = "../fs-packages-tuf" }
+
+[dev-dependencies]
+tempfile = "3"

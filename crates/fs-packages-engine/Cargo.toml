@@ -1,0 +1,31 @@
+[package]
+name = "fs-packages-engine"
+description = "FreeSynergy.Packages engine: installs tar.gz packages without root, checks for running programs"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+fs-packages-core = { path = "../fs-packages-core" }
+flate2 = "1"
+fs-packages-catalog = { path = "../fs-packages-catalog" }
+fs-packages-sources = { path = "../fs-packages-sources" }
+sha2 = "0.10"
+ureq = { version = "2", default-features = false, features = ["tls"] }
+gix = { version = "0.73", default-features = false, features = ["worktree-mutation", "blocking-network-client", "blocking-http-transport-reqwest-rust-tls"] }
+tar = "0.4"
+fs-interfaces = { git = "https://github.com/FreeSynergy/fs-interfaces", tag = "v0.0.19", features = ["rpc"] }
+tokio = { version = "1", features = ["rt", "net", "time"] }
+capnp = "0.27"
+
+[target.'cfg(unix)'.dependencies]
+rustix = { version = "1", features = ["process"] }
+
+[dev-dependencies]
+tempfile = "3"
+tokio = { version = "1", features = ["rt", "macros", "sync"] }
+fs-packages-pgp = { path = "../fs-packages-pgp" }
+pgp = { version = "0.21", default-features = false }
+rand = "0.8"
+capnp-rpc = "0.27"

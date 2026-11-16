@@ -14,16 +14,16 @@ jobs:
   release:
     uses: FreeSynergy/fs-release/.github/workflows/release.yml@6ebd3f8f5dfc8a0be08866416169defa48aea8f1 # v0.0.9
     with:
-      binaries: fs-store
-      cargo-package: fs-store
-      ignore-binaries: "fs-store-tuf-publish"   # the TUF publisher is for fs-catalog CI, not for people
-      name: fs-store
+      binaries: fs-packages
+      cargo-package: fs-packages
+      ignore-binaries: "fs-packages-tuf-publish"   # the TUF publisher is for fs-catalog CI, not for people
+      name: fs-packages
       kind: app
-      app-id: net.freesynergy.Store
+      app-id: net.freesynergy.Packages
       macos: false
       linux-formats: "tar.gz,rpm,deb"   # what the store installs (rpm on Fedora, deb on Debian/Ubuntu); AppImage and Arch only slow the build down
       windows-targets: ""   # Unsupported, on purpose: the engine uses Unix symlinks, /proc and Unix file modes, so there is no Windows build (no zip, no exe) until the engine has a Windows strategy
-      app-name: FreeSynergy.Store
+      app-name: FreeSynergy.Packages
       description: "Install, update and extend FreeSynergy programs"
     secrets:
       GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}

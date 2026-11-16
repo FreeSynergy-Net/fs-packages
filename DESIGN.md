@@ -1,4 +1,4 @@
-# fs-store (FreeSynergy.Store) – design
+# fs-packages (FreeSynergy.Packages) – design
 
 ## Purpose
 The store installs and updates FreeSynergy packages and itself. A package is a program, a frontend, a component or a
@@ -16,8 +16,8 @@ Ideas from the function analysis `temp/research/craft-launcher.md` are used as i
 | `signature` – may this package be installed | Specification (`SignaturePolicy`) | A pure predicate over the verification outcome, combinable later (e.g. with a trust level). |
 | `signature` – checking bytes against a signature | Strategy (`SignatureVerifier`) | The OpenPGP implementation is swappable; tests use a fake. |
 | `signature` – `VerifiedPackage` | Capability object | Only the policy can hand it out; holding it is the right to install. An unsigned package cannot even be passed to an installer. |
-| `fs-store-pgp` – rPGP behind `SignatureVerifier` | Adapter | Wraps the foreign `pgp` crate in our trait, so the core stays free of dependencies. rPGP (MIT OR Apache-2.0), not sequoia (LGPL). |
-| `fs-store-sources` – TOML file | Repository (file-backed) | The file holds only the user's sources and a `disabled` list; the reference source is never an entry, so deleting it from the file cannot remove it. |
+| `fs-packages-pgp` – rPGP behind `SignatureVerifier` | Adapter | Wraps the foreign `pgp` crate in our trait, so the core stays free of dependencies. rPGP (MIT OR Apache-2.0), not sequoia (LGPL). |
+| `fs-packages-sources` – TOML file | Repository (file-backed) | The file holds only the user's sources and a `disabled` list; the reference source is never an entry, so deleting it from the file cannot remove it. |
 | `words` – texts for people | none | Sentences as constants with named placeholders (coding rules 2a); no behaviour besides one pure fill function. |
 | `strategy` – how a package is installed | Strategy (`InstallStrategy`) | rpm via dnf, Flatpak, AppImage, tar.gz: one trait, one implementation per way. |
 | `state` – course of one installation | State (enum plus one transition fn) | `Failed` has exactly one way out: `RolledBack`. |
@@ -25,7 +25,7 @@ Ideas from the function analysis `temp/research/craft-launcher.md` are used as i
 | `update` – running check | Strategy (`RunningCheck`) | The OS check is outside the core. |
 
 ## Engine and frontend (ADR 0021)
-`fs-store-core` has no input or output: no network, no files, no GUI. An engine crate will implement the traits
+`fs-packages-core` has no input or output: no network, no files, no GUI. An engine crate will implement the traits
 (`gix`, a real OpenPGP library, dnf/Flatpak calls). Frontends (Blinc GUI, CLI, web page) are packages of their own and
 talk to the engine through the contract below. They are interchangeable.
 
@@ -44,7 +44,7 @@ is a Git repo with `catalog.xml` and `catalog.xml.asc` (detached OpenPGP signatu
 tar.gz), `fs:signature` (URL of the detached signature of the release file), `fs:facets` (ADR 0061, comma separated
 facet ids of a program; each facet is its own component with a logo, installing it installs the program). A component
 without `fs:signature`, without sha256, or with a version that is not `major.minor.patch` is **reported as skipped,
-never offered and never dropped silently** (`fs-store-catalog`, `Catalog::skipped`). The facet list format is
+never offered and never dropped silently** (`fs-packages-catalog`, `Catalog::skipped`). The facet list format is
 provisional until a first program ships facets.
 
 ## Contract `store.capnp` (in `fs-interfaces` v0.48.0, draft; the sketch below is the older first form)
@@ -57,7 +57,7 @@ interface Launcher {
   available      @4 () -> (list :List(Package));
   installed      @5 () -> (list :List(Package));
   install        @6 (name :Text) -> (job :Job);
-  update         @7 (name :Text) -> (job :Job);   # self-update is update("fs-store")
+  update         @7 (name :Text) -> (job :Job);   # self-update is update("fs-packages")
   watch          @8 (job :Job, sink :Sink) -> ();
 }
 struct Source  { id @0 :Text; url @1 :Text; enabled @2 :Bool; reference @3 :Bool; }
@@ -71,8 +71,8 @@ Risk marks (ADR 0021): `install`, `update`, `removeSource` are write operations 
 ## Probe against a real release (step 5, partly done 2026-11-08)
 Draft `v0.6.1-rc.2` of `fs-tasks` (made by `fs-release`, fetched with `gh release download`, because drafts are not
 public): the built-in `PgpVerifier` accepts `fs-tasks-server-0.6.1-rc.2-linux-x86_64.tar.gz` with its `.asc` as `Valid`
-for `16A4…4342`, and rejects it after one flipped byte (`crates/fs-store-pgp/tests/real_release.rs`, runs when
-`FS_PROBE_FILE`/`FS_PROBE_SIG` are set). **Done 2026-11-08:** the whole chain through a local `file://` Git catalog: `fs-store install file:///tmp/probe/cat fs-tasks-server --trust-key testkey.pub.asc` cloned it with `gix`, verified the catalog (signed by a throw-away test key made with gpg), checked sha256 and the real release signature, installed `0.6.1-rc.2` and `fs-store installed` lists it. Without `--trust-key` the same catalog is refused (`CatalogSignature`). `--trust-key <file>` trusts an extra public key for that one run only; the built-in key always stays trusted. The old note follows.
+for `16A4…4342`, and rejects it after one flipped byte (`crates/fs-packages-pgp/tests/real_release.rs`, runs when
+`FS_PROBE_FILE`/`FS_PROBE_SIG` are set). **Done 2026-11-08:** the whole chain through a local `file://` Git catalog: `fs-packages install file:///tmp/probe/cat fs-tasks-server --trust-key testkey.pub.asc` cloned it with `gix`, verified the catalog (signed by a throw-away test key made with gpg), checked sha256 and the real release signature, installed `0.6.1-rc.2` and `fs-packages installed` lists it. Without `--trust-key` the same catalog is refused (`CatalogSignature`). `--trust-key <file>` trusts an extra public key for that one run only; the built-in key always stays trusted. The old note follows.
 
 Old note: installing it through a catalog. Blockers: (1) fixed 2026-11-08: `Version` now has a pre-release part; (2) a local
 catalog needs a signature by the release key, which only the user holds. Options for (2): the user signs a test catalog,
@@ -97,27 +97,27 @@ not see programs started through an interpreter; the real error behind `RolledBa
 package archive is refused, which will need a rule (relative and inside the package) when a package needs one.
 
 ## Packaging and gate (step 7, prepared 2026-11-08)
-`.github/workflows/check.yml` (push gate of `fs-release`) and `release.yml` (binaries `fs-store` = CLI and `fs-store-app` = GUI, app id
-`net.freesynergy.Store`). Workspace version `0.1.0-rc.1`, so the first tag is `v0.1.0-rc.1`, a pre-release; the draft is signed only
+`.github/workflows/check.yml` (push gate of `fs-release`) and `release.yml` (binaries `fs-packages` = CLI and `fs-packages-app` = GUI, app id
+`net.freesynergy.Packages`). Workspace version `0.1.0-rc.1`, so the first tag is `v0.1.0-rc.1`, a pre-release; the draft is signed only
 once the repo has the signing secrets. `check_rust_rules.py` is green locally (0 errors); `lib.rs` files hold only modules and re-exports.
 rpm (done in code, tested with a fake commander only): `Rpm` writes the verified bytes to a private file (0700 dir, 0600, `O_EXCL|O_NOFOLLOW`) and runs `pkexec dnf install -y <file>`; root is asked by pkexec, never by us. dnf is one transaction, so `restore` has nothing to undo; a downgrade is the person's decision. Limit: the running check does not see programs installed under `/usr`. Not yet run for real.
 Not yet tried: the remote run of both workflows, build dependencies of Blinc on the CI runner (`apt-packages` may be needed), rpm via dnf.
 
 ## Lesson of v0.1.0-rc.1 (2026-11-08)
-The release workflow signs with the **subkey** `372A…C097`, but the public key embedded in `fs-store-pgp` was the older file
+The release workflow signs with the **subkey** `372A…C097`, but the public key embedded in `fs-packages-pgp` was the older file
 without that subkey, so our own verifier rejected the store's own release (`Invalid`) while `gpg` accepted it. Found by the
 real-file probe (`FS_PROBE_FILE`), not by the generated-key tests. Fixed in `0.1.0-rc.2` by embedding the current
 `fs-release/release-signing-key.asc`. rc.1 is public and cannot install anything signed by the subkey; use rc.2.
-When `fs-release` rotates the key or subkey, the file in `crates/fs-store-pgp/keys/` must follow (a test against a
+When `fs-release` rotates the key or subkey, the file in `crates/fs-packages-pgp/keys/` must follow (a test against a
 real signed release belongs in the release checklist).
 
 ## One binary (ADR 0063, 2026-11-08; replaces the two-binary naming of the same day)
-`fs-store` is the only binary (crate `fs-store`, `crates/fs-store`). No arguments: the window (`fs-store-app::gui::run`).
-Subcommands as in git: `fs-store sources|available|install|update|installed ...` (`fs-store-cli::run`), `fs-store serve`
-(server; answers "not built yet" until `fs-store-server` exists). The other crates are libraries. Pattern: Facade over
-Command. Cargo feature `gui` (default): `cargo build --no-default-features -p fs-store` builds without graphics (then
-the bare command prints a hint). rpm, menu entry "FreeSynergy.Store" (`packaging/net.freesynergy.Store.desktop`) and the
-catalog list only `fs-store`.
+`fs-packages` is the only binary (crate `fs-packages`, `crates/fs-packages`). No arguments: the window (`fs-packages-app::gui::run`).
+Subcommands as in git: `fs-packages sources|available|install|update|installed ...` (`fs-packages-cli::run`), `fs-packages serve`
+(server; answers "not built yet" until `fs-packages-server` exists). The other crates are libraries. Pattern: Facade over
+Command. Cargo feature `gui` (default): `cargo build --no-default-features -p fs-packages` builds without graphics (then
+the bare command prints a hint). rpm, menu entry "FreeSynergy.Packages" (`packaging/net.freesynergy.Packages.desktop`) and the
+catalog list only `fs-packages`.
 
 ## Window resize crash (found by the user, 2026-11-08; solved by Q0, 2026-11-11)
 Enlarging the window aborted with a wgpu validation error (copy into a swapchain texture one frame behind). Cause was in
@@ -132,7 +132,7 @@ animation, theme, noto_emoji). All `fs-components*` dependencies stand on the sa
 Blinc macros (`flow!`, derive) are not used by the store. Moving to a new fs-components tag: `scripts/bump-components.sh` of fs-release.
 
 ## Server and window, update, `--demo` (Q0, 2026-11-11)
-- `fs-store serve` answers as `run_until_signal_as(socket, ServerIdentity::new("fs-store", version), ...)`: a client of
+- `fs-packages serve` answers as `run_until_signal_as(socket, ServerIdentity::new("fs-packages", version), ...)`: a client of
   another version can replace it (`connect_matching`), and it answers `Control.stop`. The window needs no handshake: it talks
   to the engine in the process, not to a server (a Cap'n Proto `StoreBackend` may change that; then it uses `connect_matching`
   with `CommandStarter::new(current_exe, ["serve"])` and shows `HandshakeError` with "Try again").
@@ -154,14 +154,14 @@ Blinc macros (`flow!`, derive) are not used by the store. Moving to a new fs-com
   the new server is NOT started here, the program's own window starts it (`connect_matching`). A server that cannot be ended is
   never silent: `InstallFailure::ServerNotEnded` -> `JobError::ServerNotEnded`; the job is installed, the register is updated, and the
   page says "installed, but the old background server could not be ended: <why>". Tests with fake servers:
-  `fs-store-engine/tests/end_server.rs` and the unit tests of `ending.rs` (new server running already, old server, stubborn server).
+  `fs-packages-engine/tests/end_server.rs` and the unit tests of `ending.rs` (new server running already, old server, stubborn server).
   **Windows:** `servers.rs` and `end.rs` have `cfg(unix)` where it uses Unix API and answers "nothing found" / `Unsupported` otherwise; the
   replacement follows in the win-port (the rest of the engine, links, tar.gz, facets, is Unix-only as before).
-- **`--demo` / `--view sources` (for the typing test only).** `fs-store --demo` runs the window over sealed in-memory parts
+- **`--demo` / `--view sources` (for the typing test only).** `fs-packages --demo` runs the window over sealed in-memory parts
   (`demo::parts`): `DemoBackend` (one reference source, three programs; a job installs nothing and says so), `DemoUpdates`
-  (settings and findings in memory; its check refuses, so no `fs-store background`, no catalog over the network, no `updates.toml`,
+  (settings and findings in memory; its check refuses, so no `fs-packages background`, no catalog over the network, no `updates.toml`,
   no notification), no check at the start, `DemoLauncher` (starts no process, opens no address), and no menu entry is written.
-  Proof: `fs-store-app/tests/demo.rs`. Why: `fs-release/actions/typing-test` starts the binary on
+  Proof: `fs-packages-app/tests/demo.rs`. Why: `fs-release/actions/typing-test` starts the binary on
   a virtual screen and types into a text field; the real engine would read the person's folders, clone catalogs and install. `--view
   sources` opens on the page with the field "Git address of a source". Workflow `typing-test.yml` calls the action with
   `--demo --view sources --size 900x640` and `click-in-window: 300,190`; on GitHub the time is only reported.
@@ -173,7 +173,7 @@ program: for every facet in its catalog entry, create the link in `~/.local/bin`
 icon ("FreeSynergy.People", "FreeSynergy.Contacts"); on removing: take both away again, and only links that point into the
 package. Catalog format: the program's `fs:facets` (comma separated command names) names the links; a facet's display name
 and icon come from its own component (`<name>`, `<icon type="remote">`), whose `fs:facet-of` names the program. Facet names are
-reserved project-wide: the store refuses a link whose name already exists and is not its own. Built: `fs-store-engine::link_facets/unlink_facets`; links point to the program (`<package>` or `<package>-app`), menu entries `net.freesynergy.<command>.desktop` (marked `X-FreeSynergy-Managed=true`; only such files and links into the package are ever replaced or removed), the facets made are kept in `installed.toml` so `remove` can take them away; GUI installs do the same as the commands. No icons yet; a facet's own name and icon from its catalog component are not read yet (the name is derived from the command).
+reserved project-wide: the store refuses a link whose name already exists and is not its own. Built: `fs-packages-engine::link_facets/unlink_facets`; links point to the program (`<package>` or `<package>-app`), menu entries `net.freesynergy.<command>.desktop` (marked `X-FreeSynergy-Managed=true`; only such files and links into the package are ever replaced or removed), the facets made are kept in `installed.toml` so `remove` can take them away; GUI installs do the same as the commands. No icons yet; a facet's own name and icon from its catalog component are not read yet (the name is derived from the command).
 
 ## TUF (ADR 0062) – roles and keys, proposal for the user to confirm (2026-11-08)
 Library: `tough` 0.24 (MIT OR Apache-2.0, builds here); client = `RepositoryLoader`, publishing = its editor. TUF keys are
@@ -191,14 +191,14 @@ The user must make the root keys; the CI keys are made in `fs-catalog` by a work
 
 ## Register, automatic updates, commands on the PATH (2026-11-08)
 `installed.toml` (in the store root) records per package: version, source (Git address) and `auto_update` (default on).
-`fs-store update` / `update --all` updates every package with automatic updates on, each from its own source; one failing
-package does not stop the others. `fs-store auto <name> on|off` switches one package. `fs-store timer enable|disable|status`
-installs a systemd **user** timer (daily, 5 min after boot, random delay) that runs `fs-store update --all`; the store updates
-itself the same way (package `fs-store` in the catalog). After an install the executables at the top of the package are linked
-into `~/.local/bin` (or `FS_STORE_BIN`) through `current/<name>/`; foreign files of the same name are never replaced; `remove`
+`fs-packages update` / `update --all` updates every package with automatic updates on, each from its own source; one failing
+package does not stop the others. `fs-packages auto <name> on|off` switches one package. `fs-packages timer enable|disable|status`
+installs a systemd **user** timer (daily, 5 min after boot, random delay) that runs `fs-packages update --all`; the store updates
+itself the same way (package `fs-packages` in the catalog). After an install the executables at the top of the package are linked
+into `~/.local/bin` (or `FS_PACKAGES_BIN`) through `current/<name>/`; foreign files of the same name are never replaced; `remove`
 takes the links away. Rollback is the one of `run_update`. **Not yet:** TUF checks in the update path (catalog signature and
 the no-downgrade rule apply), programs asking the store for updates through `store.capnp` (needs the server), a per-program
-reminder in the programs. `fs-store check` lists newer versions without installing (for a start-up hint). Known gap: `fs-catalog` is signed by CI in a second commit, so for a few seconds after a push `catalog.xml` and `catalog.xml.asc` do not match and clients refuse the catalog (safe, but noisy); fix: sign before pushing, or publish the pair in one commit. The reference source is now `https://github.com/FreeSynergy/fs-catalog`.
+reminder in the programs. `fs-packages check` lists newer versions without installing (for a start-up hint). Known gap: `fs-catalog` is signed by CI in a second commit, so for a few seconds after a push `catalog.xml` and `catalog.xml.asc` do not match and clients refuse the catalog (safe, but noisy); fix: sign before pushing, or publish the pair in one commit. The reference source is now `https://github.com/FreeSynergy/Catalog`.
 
 ## Freshness until TUF is built (2026-11-08)
 The catalog root carries `fs-serial` (Unix time of generation, only goes up) and `fs-expires` (21 days later). `fs-catalog`'s
@@ -233,7 +233,7 @@ implementations over the same `Commander`, sharing the file handling in `native.
 - **Fallback:** a deb system whose release has no deb gets the `tar.gz` (it works). A release with a different main
   format than tar.gz/rpm/deb (flatpak, appimage) stays `Unsupported(format)` as before.
 - **Unsupported (explicit):** on Windows `plan` answers `Unsupported(Exe)` ("the Windows setup.exe cannot be installed by the store
-  yet"): there is no installer for it, and `fs-store` itself does not build for Windows (`std::os::unix` in the installers). The
+  yet"): there is no installer for it, and `fs-packages` itself does not build for Windows (`std::os::unix` in the installers). The
   catalog and the choice are tested; running the setup.exe is not built. Open: Windows store, `Msi`/zip as alternatives.
 - A main file (`fs:format`) that is a deb is `Unsupported(Deb)` for a store that is not a deb store. A release with only exe files has no main file and is `NotOffered` on Windows (open with the Windows store).
 - **Contract:** `store.capnp` `PackageFormat` got `deb @4` and `exe @5` (fs-interfaces, tag v0.0.3).
@@ -242,19 +242,19 @@ implementations over the same `Commander`, sharing the file handling in `native.
 
 ## Look for updates, tell the person (2026-11-08, user wish after the rc.9 test)
 `settings.toml`: `check` = off | start | daily (default) | hourly, `install` = ask (default) | auto, `notify` = on (default).
-`fs-store settings [check .. | install .. | notify ..]` shows and sets them; `fs-store background` is the check the timer runs
+`fs-packages settings [check .. | install .. | notify ..]` shows and sets them; `fs-packages background` is the check the timer runs
 (`timer enable` follows `check`: hourly -> 1h, daily -> 1d): it fetches the sources (signature and freshness checked),
 compares with the register, writes `updates.toml` (updates, programs new since the last check, the names offered; no "new" flood on the
 very first check), tells the person (`notify-send`, and the launcher badge as Unity `LauncherEntry` count over `gdbus`; both best effort, switched off by
 `notify off`) and installs by itself only with `install auto`. The window reads `updates.toml` for "Updates (n)" and the "New" marks.
 **Measured (release build, 13 MB package, 2026-11-08):** catalog 0.65 s, download 2.8 s, sha256 0.01 s, signature 0.02 s, unpack 0.16 s
-(`FS_STORE_TIMING=1` prints the steps). So a slow rpm update is `pkexec`/`dnf`; dnf now gets `--setopt=metadata_expire=never`
+(`FS_PACKAGES_TIMING=1` prints the steps). So a slow rpm update is `pkexec`/`dnf`; dnf now gets `--setopt=metadata_expire=never`
 (a local rpm needs no repository refresh; dry run 1.5 s -> 0.65 s with cache). The time spent typing the password in the pkexec dialog is not ours.
 
-## `fs-store-server`: programs ask the store for updates (2026-11-08, first slice)
+## `fs-packages-server`: programs ask the store for updates (2026-11-08, first slice)
 Programs never download by themselves; they ask the store ("is there an update for me?") over `store.capnp` on a Unix
-socket (`$XDG_RUNTIME_DIR/freesynergy/store.sock`), started by `fs-store serve [--socket PATH]` (feature-independent). Crate
-`crates/fs-store-server` only translates; the shared server side (socket, peer check, problems) is `fs-interfaces` with feature `rpc`.
+socket (`$XDG_RUNTIME_DIR/freesynergy/store.sock`), started by `fs-packages serve [--socket PATH]` (feature-independent). Crate
+`crates/fs-packages-server` only translates; the shared server side (socket, peer check, problems) is `fs-interfaces` with feature `rpc`.
 
 | Pattern | Where |
 |---|---|
@@ -264,38 +264,38 @@ socket (`$XDG_RUNTIME_DIR/freesynergy/store.sock`), started by `fs-store serve [
 | Template method | `catalogs.rs`: clone, verify signature, parse, check freshness; a failing source answers as a skipped entry |
 | Value object | `Capabilities` built once; `capabilities`, `supportReport` and every refusal answer from it |
 | Null object | the writes answer the provider-rule `Unsupported` |
-| Command | `serve_command` is the subcommand `fs-store serve` |
+| Command | `serve_command` is the subcommand `fs-packages serve` |
 
 Answers in this slice: `capabilities`, `supportReport`, `sources`, `available` (signed catalogs of enabled sources, as
-`fs-store available`), `installed` (register `installed.toml`; the version `rpm -q` reports wins, then the format is `rpm`; kind
+`fs-packages available`), `installed` (register `installed.toml`; the version `rpm -q` reports wins, then the format is `rpm`; kind
 is `program` and format `tarGz` otherwise, as the register does not hold them). **Unsupported, with a sentence:** `addSource`,
 `setEnabled`, `removeSource`, `refresh`, `install`, `update`, `uninstall` (no write acts without a person; the transport does not
 know the caller yet, ADR 0054), and `job`, `subscribe` (the server starts no job). No change feed yet. Later: writes once the
 caller is known (acts-in-name), jobs and `subscribe` with them.
 
 ## TUF client (2026-11-08, first slice)
-`fs-store-tuf::read_target(root, metadata_dir, targets_dir, name)` reads a file through `tough` 0.24: signatures of the chain
+`fs-packages-tuf::read_target(root, metadata_dir, targets_dir, name)` reads a file through `tough` 0.24: signatures of the chain
 root -> timestamp -> snapshot -> targets, versions, expiry, and the target's length and hash are checked before a byte is returned
 (5 tests against the TUF reference-implementation repository: a listed file is read; an unlisted, a changed file, damaged metadata and an unrelated root
-are refused). In the store: when `FS_STORE_TUF_ROOT=<root.json>` is set, a source must carry `tuf/metadata` and `tuf/targets` and its `catalog.xml`
+are refused). In the store: when `FS_PACKAGES_TUF_ROOT=<root.json>` is set, a source must carry `tuf/metadata` and `tuf/targets` and its `catalog.xml`
 must be the exact file the metadata signs; else the source is refused. **Not done:** the project's own root (the user makes the root keys and signs
 `root.json` with `16A4…4342` as described above), a TUF layout in `fs-catalog` (CI keys for targets/snapshot/timestamp, weekly re-signing of timestamp),
 TUF for the release files themselves (today: OpenPGP signature plus the sha256 in the signed catalog), the built-in root.
 
 ## Update hint in the programs (decision, provisional, 2026-11-08)
-Crate `fs-store-client`: `update_hint("fs-tasks") -> Option<UpdateHint{program, from, to}>` (and `.sentence()`). It reads what the store's
+Crate `fs-packages-client`: `update_hint("fs-tasks") -> Option<UpdateHint{program, from, to}>` (and `.sentence()`). It reads what the store's
 background check wrote (`updates.toml`) and the person's `notify` setting (`settings.toml`); it never downloads and never fails a
 program (a missing or unreadable file means no hint). A program calls it once at start (a plain notice with the sentence; the
-store opens with the program's `fs-store` command). Why a file and not `store.capnp`: no process has to run, and the server cannot know its
+store opens with the program's `fs-packages` command). Why a file and not `store.capnp`: no process has to run, and the server cannot know its
 callers yet (ADR 0054); the same question can later go through the contract. Depend on it by Git tag:
-`fs-store-client = { git = "https://github.com/FreeSynergy/fs-store", tag = "v0.0.N" }`.
+`fs-packages-client = { git = "https://github.com/FreeSynergy/fs-packages", tag = "v0.0.N" }`.
 
 ## TUF publishing (2026-11-08)
-Crate `fs-store-tuf-publish` (library plus binary `fs-store-tuf-publish`, on `tough` 0.24's editor). Directory layout it works on:
+Crate `fs-packages-tuf-publish` (library plus binary `fs-packages-tuf-publish`, on `tough` 0.24's editor). Directory layout it works on:
 `catalog.xml`, `root.json` (trusted), `targets.pk8`, `snapshot.pk8`, `timestamp.pk8` (Ed25519, PKCS#8 DER); it writes `tuf/metadata/*.json` and
 `tuf/targets/catalog.xml` (consistent snapshots off). Expiries: targets 90 days, snapshot 7, timestamp 1 (`--targets-days`, `--snapshot-days`,
 `--timestamp-days`). Versions only go up: each run reads `tuf/metadata/{targets,snapshot,timestamp}.json` and writes version + 1. So every run
-re-signs all three roles, which is also the renewal. `fs-store-tuf-publish generate <dir> [--root-keys 3 --threshold 2 --root-days 365]`
+re-signs all three roles, which is also the renewal. `fs-packages-tuf-publish generate <dir> [--root-keys 3 --threshold 2 --root-days 365]`
 makes `root-N.pk8`, the three role keys and a signed `root.json` (tests use the same function with throw-away keys in a temp dir; no key is ever committed).
 6 tests: publish then `read_target` reads `catalog.xml`; an expired timestamp, a changed catalog and a foreign root are refused; a republish bumps versions.
 
@@ -305,9 +305,9 @@ Who holds which key:
 - `targets.pk8`, `snapshot.pk8`, `timestamp.pk8`: CI secrets of `fs-catalog` (`TUF_TARGETS_KEY`, `TUF_SNAPSHOT_KEY`, `TUF_TIMESTAMP_KEY`, base64 of the file).
 - Re-signing: timestamp lives 1 day, so a daily scheduled run of `sign.yml` is needed (weekly is the limit for snapshot only). A mirror cannot keep an old state alive.
 
-What the user must do once: `fs-store-tuf-publish generate /safe/place` on an offline machine; move `root-*.pk8` to offline storage; put the three
+What the user must do once: `fs-packages-tuf-publish generate /safe/place` on an offline machine; move `root-*.pk8` to offline storage; put the three
 role keys into the `fs-catalog` secrets and delete them locally; `gpg --detach-sign --armor root.json`; copy `root.json` (and `root.json.asc`) to
-`fs-catalog/tuf/root.json` and `root.json` to `crates/fs-store-cli/keys/tuf-root.json` (this switches the check on, see below).
+`fs-catalog/tuf/root.json` and `root.json` to `crates/fs-packages-cli/keys/tuf-root.json` (this switches the check on, see below).
 
 Ready-to-use step for `fs-catalog`'s `sign.yml` (not committed there):
 ```yaml
@@ -319,17 +319,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: cargo install --git https://github.com/FreeSynergy/fs-store --tag <tag> fs-store-tuf-publish
+      - run: cargo install --git https://github.com/FreeSynergy/fs-packages --tag <tag> fs-packages-tuf-publish
       - run: |
           cp tuf/root.json root.json
           printf %s "${{ secrets.TUF_TARGETS_KEY }}"   | base64 -d > targets.pk8
           printf %s "${{ secrets.TUF_SNAPSHOT_KEY }}"  | base64 -d > snapshot.pk8
           printf %s "${{ secrets.TUF_TIMESTAMP_KEY }}" | base64 -d > timestamp.pk8
-          fs-store-tuf-publish publish .
+          fs-packages-tuf-publish publish .
           rm -f targets.pk8 snapshot.pk8 timestamp.pk8 root.json
       - run: git add tuf && git commit -m "tuf: re-sign" && git push   # with the bot identity of sign.yml
 ```
-Store side: `crates/fs-store-cli/src/tuf.rs` uses `FS_STORE_TUF_ROOT` if set, else the built-in root `crates/fs-store-cli/keys/tuf-root.json`
+Store side: `crates/fs-packages-cli/src/tuf.rs` uses `FS_PACKAGES_TUF_ROOT` if set, else the built-in root `crates/fs-packages-cli/keys/tuf-root.json`
 (embedded by `build.rs` when the file exists at build time). **Not active until the project root exists:** the file is absent now, so a plain build
 checks nothing. Once it exists every source must carry valid TUF metadata that signs its exact `catalog.xml` (a source without `tuf/metadata` is
 refused, so metadata cannot be stripped).
@@ -337,7 +337,7 @@ refused, so metadata cannot be stripped).
 ## Install queue and servers (2026-11-08, user wish after the test)
 
 - **Two halves of an install.** `plan` (verified catalog, which files), `download`, `check` (sum, signature) change nothing on the machine; `commit` installs. Several packages are one batch (Unit of Work): `prepare_all` runs the downloads side by side, `commit_all` installs when none is left. All rpm of a batch go into ONE `pkexec dnf install` (one password); tar.gz are unpacked one after the other. A failed download does not stop the others; its error stays on its card. A package added after the install step starts a new batch.
-- **Window.** The model holds a list of jobs (one phase each); `take_commit` hands the ready jobs out once. Button "Update all (N)" shows only when updates wait; `fs-store update --all` is one batch too.
+- **Window.** The model holds a list of jobs (one phase each); `take_commit` hands the ready jobs out once. Button "Update all (N)" shows only when updates wait; `fs-packages update --all` is one batch too.
 - **Running servers.** `fs-<name> serve` never blocks an update: the store ends it (`Control.stop`, SIGTERM for an old one; never SIGKILL, see "Server and window"), waits up to 15 s, installs, starts the server again with the same options only when the install failed (Q0: after a good install the program's window starts the new one). A server that does not end in time keeps the update away ("still running"). Only processes of the same person are touched.
 - **Open.** Window asks the program to "save the session and restart" through the update hint (ADR 0065 point 7); the real `pkexec dnf` path of a batch and the window itself are not tried by hand yet.
 
@@ -348,10 +348,10 @@ refused, so metadata cannot be stripped).
 - Name of the program "Launcher" and crate names are provisional.
 
 ## State
-Core traits and value types; rPGP adapter (`fs-store-pgp`, built-in release key and the revoked key as files, tested with
-generated test keys); TOML source list (`fs-store-sources`); `words.rs`. 27 tests; `fs-store-catalog` reads AppStream (4 tests); `fs-store-engine` has `TarGz` (install to a root dir, atomic symlink switch, old version kept, escaping archive entries refused) and `ProcRunningCheck` (5 tests). `service::Installer` runs the whole chain (catalog signature, release file, sha256, release signature, `run_update`) over a `Fetch` trait; 4 tests with a fake verifier, so far not run with real keys. `net`: `HttpsFetch` (https only, 512 MiB cap) and `clone_catalog` (`gix`, depth 1, tested against a local repo). `fs-store-cli` (binary `fs-store`: `available`, `install`, `installed`; `FS_STORE_ROOT` overrides `~/.local/share/fs-store`) is the thin test front end; subcommands `sources [add|enable|disable|remove]`, `available [source]`, `install <name> [source]`, `update <name> [source]` (only if newer), `installed`; tried by hand against the local catalog, no automated CLI test yet. Self-update (step 3, done): the store is a package like any other; the switch of `current/<name>` is a symlink swap, so the running old executable is never overwritten, and `ProcRunningCheck` ignores the calling process (tested with a real running program). The new version starts at the next launch. Still open in step 3 (rest): `gix` fetch, HTTPS download, rpm via dnf/pkexec, self-update (atomic swap of the own executable). Contract moved to `fs-interfaces` (`schema/store.capnp`, no tag yet, waits for a review by a second agent); the server `fs-store-server` is not built. Not built (older list): `gix`, real
+Core traits and value types; rPGP adapter (`fs-packages-pgp`, built-in release key and the revoked key as files, tested with
+generated test keys); TOML source list (`fs-packages-sources`); `words.rs`. 27 tests; `fs-packages-catalog` reads AppStream (4 tests); `fs-packages-engine` has `TarGz` (install to a root dir, atomic symlink switch, old version kept, escaping archive entries refused) and `ProcRunningCheck` (5 tests). `service::Installer` runs the whole chain (catalog signature, release file, sha256, release signature, `run_update`) over a `Fetch` trait; 4 tests with a fake verifier, so far not run with real keys. `net`: `HttpsFetch` (https only, 512 MiB cap) and `clone_catalog` (`gix`, depth 1, tested against a local repo). `fs-packages-cli` (binary `fs-packages`: `available`, `install`, `installed`; `FS_PACKAGES_ROOT` overrides `~/.local/share/fs-packages`) is the thin test front end; subcommands `sources [add|enable|disable|remove]`, `available [source]`, `install <name> [source]`, `update <name> [source]` (only if newer), `installed`; tried by hand against the local catalog, no automated CLI test yet. Self-update (step 3, done): the store is a package like any other; the switch of `current/<name>` is a symlink swap, so the running old executable is never overwritten, and `ProcRunningCheck` ignores the calling process (tested with a real running program). The new version starts at the next launch. Still open in step 3 (rest): `gix` fetch, HTTPS download, rpm via dnf/pkexec, self-update (atomic swap of the own executable). Contract moved to `fs-interfaces` (`schema/store.capnp`, no tag yet, waits for a review by a second agent); the server `fs-packages-server` is not built. Not built (older list): `gix`, real
 installers, self-replacement of the executable, GUI/CLI, the capnp file, a `Command` trait (comes with remove),
-key expiry checks and subkey rules in `fs-store-pgp` (provisional: a valid signature by the primary key or a public
+key expiry checks and subkey rules in `fs-packages-pgp` (provisional: a valid signature by the primary key or a public
 subkey of a non-revoked trusted key counts), translation of `words.rs`, atomic write of the source file.
 
 ## Start page, job list, display names (Q3, 2026-11-10)
@@ -359,7 +359,7 @@ subkey of a non-revoked trusted key counts), translation of `words.rs`, atomic w
 - Updates live on the start page (block "Updates" above the cards, with "Update all"), not in a menu entry: `StoreModel::update_rows`.
 - Installing runs in the background (queue above); every job is one line of the job list (`job_lines`), nothing else is
   blocked; only an uninstall disables the buttons. Finished jobs go with "Clear finished".
-- Display name: ONE function, `fs_store_core::display_name(id, title)` (`names.rs`): the catalog `<name>` wins (an empty one, or one that still starts with `fs-`, counts as missing), else
+- Display name: ONE function, `fs_packages_core::display_name(id, title)` (`names.rs`): the catalog `<name>` wins (an empty one, or one that still starts with `fs-`, counts as missing), else
   `fs-people` becomes `FreeSynergy.People`. `StoreModel::title` is what every window and sentence uses; `fs-...` stays
   for repository, package and command only.
 - ADR 0066: the new view code (job list, update block) is the smallest possible and moves to `fs-components` with
@@ -372,7 +372,7 @@ subkey of a non-revoked trusted key counts), translation of `words.rs`, atomic w
 
 ## Folgepaket (after the releases, not done yet)
 - (done, v0.0.11) Time limits: `CALL_LIMIT` (5 s) on connect, `Control.version` and `Control.stop` in `end.rs`, through `fs_interfaces::rpc::client::call_limited` (v0.0.18; the own `limited` is only a thin wrapper that turns `Fault::TimedOut` into an `io::Error`); a server that never answers is an error (`ServerNotEnded`), never a hang. Test: `a_server_that_never_answers_...`.
-- `crates/fs-store/src/main.rs` (`is_root`) uses `std::os::unix` without `cfg` (Windows port, later).
+- `crates/fs-packages/src/main.rs` (`is_root`) uses `std::os::unix` without `cfg` (Windows port, later).
 - `is_server_of` re-check on the found process right before SIGTERM.
 - `wait_gone` also accepts a fitting new server on the socket (started by the window meanwhile).
 - Test: the menu entry is not written for an empty `HOME`.
@@ -384,14 +384,14 @@ subkey of a non-revoked trusted key counts), translation of `words.rs`, atomic w
 
 ## The store's own list of files (2026-11-12, user correction via strategy)
 Which package a file belongs to is stored by the store itself, the same on every system; `rpm -qf`/`dpkg -S` are at most an
-additional cross-check (`fs-store owner`, only for a path that is none of ours), never required.
-- **List:** `<root>/manifests/<name>.toml` (`fs-store-sources::ManifestStore`, atomic write): schema, name, version, source,
+additional cross-check (`fs-packages owner`, only for a path that is none of ours), never required.
+- **List:** `<root>/manifests/<name>.toml` (`fs-packages-sources::ManifestStore`, atomic write): schema, name, version, source,
   signer (fingerprint of the checked release signature, from `Prepared::signer`), `basis`, `recorded_at`, and per file `path`
   (inside the package, `/`), `hash` (`sha256:<hex>`, algorithm-prefixed like `blake3:<hex>` of the files program), `size`, `mode`.
   Written after a good tar.gz install by `record_install` (window and commands); rpm/deb get none (the package manager owns the files).
   Shaped to become an AS2 `Add` activity (`files` = object, `source` = origin, name/version/signer = instrument).
-- **`fs-store verify [name]`:** checks every file against its list; "changed" and "missing" are printed (red on a terminal) and the exit
-  code is 1. Only our own installations. **`fs-store owner <path>`:** package, version, source, signature, checksum and the level of
+- **`fs-packages verify [name]`:** checks every file against its list; "changed" and "missing" are printed (red on a terminal) and the exit
+  code is 1. Only our own installations. **`fs-packages owner <path>`:** package, version, source, signature, checksum and the level of
   proof (recorded at install / listed afterwards / changed / missing); a link into a package counts.
 - **Migration:** an install without a list gets one at the first `verify`, made from the tree on disk and marked `retroactive`
   (it cannot see changes made before; always shown as "not the original").
@@ -401,7 +401,7 @@ additional cross-check (`fs-store owner`, only for a path that is none of ours),
 ## Storefront, variant B (frontend-store, 2026-11-12)
 The window is a launcher-like storefront after the references in `.scratch/frontends/vorbilder-store/` (ArtCraft Launcher for the
 shape: grid or table, filter tabs with counts, sort, search; Flathub for the package page). Data first, then looks:
-- **Data:** `PackageRow` carries `details` (`fs_store_core::Details`: size, release date, changes per version, origin, trust level,
+- **Data:** `PackageRow` carries `details` (`fs_packages_core::Details`: size, release date, changes per version, origin, trust level,
   capabilities, pictures with a clear licence, description as text or wiki block) and `native` (rpm/deb offered). Everything the catalog
   does not say is shown as "unknown", never guessed. Capabilities (offers, needs, can use) are kept apart from rights; each need is
   answered by the resolver of the core (one provider, a choice, or nobody).
@@ -442,9 +442,9 @@ Builds directly on `fs-components` v0.0.11 and `fs-interfaces` v0.0.19 (Blinc `f
 `fs-interfaces` v0.0.19 = 90e62c3, one source each). No `[patch]`, no local path: the Craft building blocks (`fs-components-widgets::craft`), the
 Craft style and the theme adapter (`fs_components_render::use_style`) come from v0.0.11.
 - **Contains:** the storefront (variant B, Craft) and the compact window (variant C, `--variant c`), the catalog facts (`Details`, trust level, capabilities,
-  pictures with a licence), the resolver, `fs-store owner` and `verify` with the own file list, the engine's cancel and progress, no second start while a job
+  pictures with a licence), the resolver, `fs-packages owner` and `verify` with the own file list, the engine's cancel and progress, no second start while a job
   runs, the reason for a locked Open (DE+EN), the warning lines in the question before an install, empty blocks as one line.
-- **Wire:** `fs-store-server` writes the new `Package` fields of `store.capnp` (@7 to @18: size, released, releases, origin, trust, provides/requires/recommends,
+- **Wire:** `fs-packages-server` writes the new `Package` fields of `store.capnp` (@7 to @18: size, released, releases, origin, trust, provides/requires/recommends,
   iconSha256, pictures, description). What the catalog does not say stays at the contract's default (0, empty), so a reader shows "unknown", and a package known only
   from the register carries none of it. Capability names are written as the catalog gives them; the window checks them against `fs_interfaces::capabilities`
   (one list, no copy) and shows an unknown name as it is.
@@ -467,7 +467,7 @@ Craft style and the theme adapter (`fs_components_render::use_style`) come from 
   `fs:min-store` above the crate version, gives a `CatalogEntry` with `locked: Some(reason)`: read tolerantly (no release file needed, version `0.0.0` when none), never downloaded. Evidence before the change:
   `entry()` returned `Err((id, "unknown fs:kind"))` and `parse_catalog` pushed it to `Catalog.skipped`, so only that entry was lost and the catalog and the other packages loaded; it was not shown as locked.
   Locked entries are refused by the engine (`plan`), the model (`begin_job`, `ask_install`) and the buttons. A server/icon-theme entry may enter the real catalog once a store with this reader is released.
-- **Language** is a Strategy over the variants of an element (`fs_store_core::language::pick`), the catalog reader takes the list of preferred languages (`parse_catalog_in`), the window passes
+- **Language** is a Strategy over the variants of an element (`fs_packages_core::language::pick`), the catalog reader takes the list of preferred languages (`parse_catalog_in`), the window passes
   `language::preferred()`. The engine and the commands keep reading English (they show no catalog texts).
 - **Wire:** only what `store.capnp` v0.0.19 can say goes out. `split_for_wire` reports the kinds it cannot say as `skipped` instead of writing a wrong kind.
 - **Locked offers in the commands:** `install X` and `update X` with a locked package fail (exit not zero, `locked::outcome`); `update --all` skips it with a note. `check`, `background` and `update --all`
@@ -476,13 +476,13 @@ Craft style and the theme adapter (`fs_components_render::use_style`) come from 
 ## Reload, messages, the one confirmation, navigation (0.0.16)
 - **Reload** (`model/refresh.rs`, `model/fetch.rs`, `view/job.rs::start_refresh`): the window reads on a worker thread (ticket, `fetch`, `finish_read`) under an epoch counter. `fetch` catches a panic of the backend and returns it as a *broken* read: nothing is taken over, `Problem::Backend(READ_BROKEN)` is told, `running` is reset, so the button never stays dead. `apply_listing` keeps the old offers of a source that is `unreadable` and of a listing that failed as a whole (a failed reload never empties the window). Tests: `tests/reload_notices.rs` (changing catalog, source down, catalog read fails, panic; each with a counter-proof).
 - **Reload button:** `cell_button` with `Glyph::Reload` (freedesktop `view-refresh`), no label; tooltip `words_msg::reload_tip` / `reload_busy`.
-- **Messages** (`model/notices.rs`, `view/notices.rs`): `NoticeBoard` is made from the problems at each draw (`sync_notices(now)`), the time is an argument (fake time in tests). `Severity::Info` shows `INFO_SECONDS` (6), `Severity::Error` `ERROR_SECONDS` (20); `close_notice(id)` hides one; `notice_history()` keeps all (max 100) and is shown by `View::Messages` (menu Store > Messages). `release()` at every new read makes a failure that repeats a new message. The view asks for a new drawing when the next message runs out (one timer per expiry).
+- **Messages** (`model/notices.rs`, `view/notices.rs`): `NoticeBoard` is made from the problems at each draw (`sync_notices(now)`), the time is an argument (fake time in tests). `Severity::Info` shows `INFO_SECONDS` (6), `Severity::Error` `ERROR_SECONDS` (20); `close_notice(id)` hides one; `notice_history()` keeps all (max 100) and is shown by `View::Messages` (menu Packages > Messages). `release()` at every new read makes a failure that repeats a new message. The view asks for a new drawing when the next message runs out (one timer per expiry).
 - **One confirmation:** the question (`Preview`) is the confirmation: `facts` (source, size, rights) and `notice` (the password of the system is asked next, only when the install goes through rpm/deb: `model/front_facts.rs`), confirm button `Preview::confirm_label()` ("Install now" / "Update now"). `confirm()` of the view starts the jobs at once; the test `the_question_is_the_one_confirmation...` asserts that nothing asks after `take_preview`.
 - **Navigation:** `NavEntry.count` is `Option<usize>`: Start has none (an overview: updates, new, not-supported entries; `start_blocks` has no per-kind blocks), every other entry counts what `listing()` shows in its section (`front.rs::every_section_counts...`). `section_title()` names the kind in the list header. Not-supported kinds appear only on the start overview.
-- **Wording:** frontend, never "face" (menu View > Frontend). The internal type `fs_store_sources::Face` and the settings key `face` keep their name for saved settings (open: rename with an alias).
+- **Wording:** frontend, never "face" (menu View > Frontend). The internal type `fs_packages_sources::Face` and the settings key `face` keep their name for saved settings (open: rename with an alias).
 
 ## Frontends (0.0.14; the code says `Face`)
-- **What a frontend is.** `fs_store_sources::Face` (`Storefront` = variant B, `Compact` = variant C), part of `Settings` (`settings.toml`, field `face`, default `Storefront`). It is a layout; the shared surface (`view::shell`) reads it
+- **What a frontend is.** `fs_packages_sources::Face` (`Storefront` = variant B, `Compact` = variant C), part of `Settings` (`settings.toml`, field `face`, default `Storefront`). It is a layout; the shared surface (`view::shell`) reads it
   from the model at every draw (`StoreModel::face()`), so the menu changes it without a restart. `Face::ALL` is the list the View menu is made from: a face that is not built is not listed.
 - **Choice and override.** `StoreModel::set_face` (menu, `Command::Face`) clears the command-line override, sets the face, saves with the other settings (atomic write, `Settings::save`). `--variant` calls `override_face`: it wins and is never saved.
   A settings file that cannot be parsed is the existing path: warning (problem line), default settings. An unknown `face` value (a newer store) is the default face and the rest of the file is kept (custom `Deserialize`).
@@ -498,11 +498,11 @@ Craft style and the theme adapter (`fs_components_render::use_style`) come from 
 - **Bug (0.0.14 and before):** `link_facets` looked into `current/<name>/` first and `/usr/bin` second, so a package that was unpacked once (tar.gz 0.0.2) and later installed as rpm (0.0.7) kept its commands on the old unpacked program; `installed.toml` said 0.0.7, the person started 0.0.2.
 - **The form is decided by the version just installed** (`after.rs`, same rule as `record_install`): `packages/<name>/<version>` exists → unpacked (`Form::Unpacked`, links through `current/<name>`); else the package manager owns the program (`Form::System`, links to `/usr/bin/<name>` or `<name>-app`). `settle_install` now takes the version.
 - **tar.gz → rpm/deb cleans up (`retire.rs`):** links into `current/<name>`, the `current/<name>` link, the folders below `packages/<name>/` and the list of files are removed. Everything below `packages/<name>/` is the store's own place; a version folder that has a list and holds a file not in it stays (with the list) and is reported, a version folder without a matching list is removed as a whole (no foreign-file check possible). A name from `installed.toml` that is empty, `.`, `..` or has a path separator removes nothing. The form is decided only by `packages/<name>/<version>`: tar.gz and rpm of the same version at once count as unpacked. `relink` changes nothing (and says so) when the register's version is neither unpacked nor found in the system folder, so it never removes the only installation. Other packages and commands of other people are never touched (test with counter-test).
-- **`fs-store verify [name]`** also compares every command of the register (package and facets) with `installed.toml` (`check_links`): a link into `current/<name>` that resolves to another version than the register (or to nothing, because the package is an rpm now), a link into the system folder while the unpacked form is active, or a link to a file that is gone. Exit code is not zero; the message names the command, what it starts, what the register says and the repair `fs-store relink <name>`.
-- **`fs-store relink [name]`** redoes the follow-up of the install from the register (facets, menu entries, retire) for the active form. Not verified against a real dnf here: the rpm side is tested with a folder standing in for `/usr/bin`.
+- **`fs-packages verify [name]`** also compares every command of the register (package and facets) with `installed.toml` (`check_links`): a link into `current/<name>` that resolves to another version than the register (or to nothing, because the package is an rpm now), a link into the system folder while the unpacked form is active, or a link to a file that is gone. Exit code is not zero; the message names the command, what it starts, what the register says and the repair `fs-packages relink <name>`.
+- **`fs-packages relink [name]`** redoes the follow-up of the install from the register (facets, menu entries, retire) for the active form. Not verified against a real dnf here: the rpm side is tested with a folder standing in for `/usr/bin`.
 
 ## Lift to fs-components v0.0.23 (0.0.17)
-- **Dependencies:** `fs-components` v0.0.23 (57ddfd3; was v0.0.13), `fs-interfaces` v0.0.19 and Blinc `fs-blinc-3.1#cf925af1` unchanged. Only `crates/fs-store-app/Cargo.toml` names fs-components; the lock was updated with `cargo update -p fs-components`. No source file changed: the API changes between v0.0.13 and v0.0.23 do not touch what the store uses.
+- **Dependencies:** `fs-components` v0.0.23 (57ddfd3; was v0.0.13), `fs-interfaces` v0.0.19 and Blinc `fs-blinc-3.1#cf925af1` unchanged. Only `crates/fs-packages-app/Cargo.toml` names fs-components; the lock was updated with `cargo update -p fs-components`. No source file changed: the API changes between v0.0.13 and v0.0.23 do not touch what the store uses.
 - **Not used yet:** the new blocks (license dialog, confirm dialog, toast, switch, segmented) wait for the software pilot, stage 3.
 - **Only visible effect:** Craft uses the system mono font when JetBrains Mono is not installed (fs-components 0.0.23, 16b: mono list); text about 1 px lower, layout and colours the same.
 - **CI:** fs-release pinned to v0.0.9 (`6ebd3f8`) in `check.yml`, `release.yml` and `typing-test.yml`.
