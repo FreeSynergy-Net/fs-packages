@@ -5,6 +5,7 @@
 use std::fs;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex, PoisonError};
+use std::time::SystemTime;
 
 use fs_packages_core::{SourceId, SourceRepository, Version};
 use fs_packages_engine::CatalogCache;
@@ -16,6 +17,7 @@ use crate::backend::{
     BackendError, InstalledDetails, InstalledRow, JobError, JobKind, Listing, PackageRow, Phase,
     Prepared, SourceRow, StoreBackend,
 };
+use crate::engine_icons::{IconSource, IconWishes, icon_names};
 pub(crate) use crate::engine_read::SourceRead;
 
 pub(crate) struct AnyFetch;
@@ -35,41 +37,42 @@ impl Fetch for AnyFetch {
 pub struct EngineBackend {
     pub(crate) root: PathBuf,
     /// Names the sources offered last time: they are looked up in rpm too.
-    offered: Arc<Mutex<Vec<String>>>,
+    pub(crate) offered: Arc<Mutex<Vec<String>>>,
     /// Catalogs read and verified in this session: each source is fetched once, then reused until it is old or "refresh" is pressed.
     pub(crate) catalogs: Arc<CatalogCache<SourceRead>>,
     /// Unix seconds of the oldest catalog read the last listing used (0 = none): what "Checked ..." says.
-    listed_at: Arc<Mutex<u64>>,
+    pub(crate) listed_at: Arc<Mutex<u64>>,
     /// The names that have an icon file in `<root>/icons`, read once per listing (not one `stat` per card per draw).
-    icons: Arc<Mutex<Option<std::collections::HashSet<String>>>>,
+    pub(crate) icons: Arc<Mutex<Option<std::collections::HashSet<String>>>>,
     /// The format this system takes, asked once (it starts `rpm -qf` or `dpkg -S`, ~8 ms: not once per card per draw).
-    format: Arc<std::sync::OnceLock<fs_packages_core::Format>>,
+    pub(crate) format: Arc<std::sync::OnceLock<fs_packages_core::Format>>,
+    /// The folder of the icon cache (`<cache>/icons/<sha256>.png`).
+    pub(crate) cache: PathBuf,
+    /// The icons the signed catalogs name (what the cache should hold).
+    pub(crate) icon_wishes: Arc<Mutex<IconWishes>>,
+    pub(crate) icon_source: IconSource,
 }
 
 impl EngineBackend {
-    /// Works below `root` (`sources.toml`, `packages/`, `current/`).
+    /// Works below `root` (`sources.toml`, `packages/`, `current/`); the icon cache is `<root>/cache`.
     #[must_use]
     pub fn new(root: PathBuf) -> Self {
-        Self {
-            root,
-            offered: Arc::default(),
-            catalogs: Arc::default(),
-            listed_at: Arc::default(),
-            icons: Arc::default(),
-            format: Arc::default(),
-        }
+        let cache = root.join("cache");
+        Self::with_cache(root, cache)
     }
 
-    /// `FS_PACKAGES_ROOT`, or `~/.local/share/fs-packages`, like the CLI.
+    /// `FS_PACKAGES_ROOT`, or `~/.local/share/fs-packages`, like the CLI. The icon cache is `<root>/cache` when
+    /// `FS_PACKAGES_ROOT` is set, else `$XDG_CACHE_HOME/fs-packages` (`~/.cache/fs-packages`).
     #[must_use]
     pub fn from_environment() -> Self {
-        Self::new(std::env::var_os("FS_PACKAGES_ROOT").map_or_else(
+        let root = std::env::var_os("FS_PACKAGES_ROOT").map_or_else(
             || {
                 PathBuf::from(std::env::var_os("HOME").unwrap_or_default())
                     .join(".local/share/fs-packages")
             },
             PathBuf::from,
-        ))
+        );
+        Self::with_cache(root, fs_packages_engine::cache_dir_from_environment())
     }
 
     pub(crate) fn root(&self) -> &std::path::Path {
@@ -95,21 +98,6 @@ impl EngineBackend {
             .find(|r| r.name == name)
             .map(|r| r.version)
     }
-}
-
-/// The names of the `<name>.png` files (regular files only) in `dir`; a missing folder is an empty set.
-fn icon_names(dir: &std::path::Path) -> std::collections::HashSet<String> {
-    let Ok(entries) = fs::read_dir(dir) else {
-        return std::collections::HashSet::new();
-    };
-    entries
-        .flatten()
-        .filter(|e| e.path().is_file())
-        .filter_map(|e| {
-            let name = e.file_name().into_string().ok()?;
-            name.strip_suffix(".png").map(str::to_owned)
-        })
-        .collect()
 }
 
 fn other(error: impl std::fmt::Debug) -> BackendError {
@@ -157,11 +145,13 @@ impl StoreBackend for EngineBackend {
         *self.icons.lock().unwrap_or_else(PoisonError::into_inner) = None;
         let mut listing = Listing::default();
         let mut oldest = u64::MAX;
+        let mut wanted = Vec::new();
         for source in self.file()?.list().into_iter().filter(|s| s.enabled) {
             match self.read_cached(&source.url) {
                 Ok(read) => {
                     oldest = oldest.min(read.at);
                     let catalog = read.catalog.clone();
+                    wanted.extend(crate::engine_icons::wanted_icons(&catalog));
                     listing
                         .packages
                         .extend(catalog.entries.into_iter().map(|e| {
@@ -196,6 +186,13 @@ impl StoreBackend for EngineBackend {
             .listed_at
             .lock()
             .unwrap_or_else(PoisonError::into_inner) = if oldest == u64::MAX { 0 } else { oldest };
+        *self
+            .icon_wishes
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner) = IconWishes {
+            wanted,
+            all_read: listing.unreadable.is_empty(),
+        };
         Ok(listing)
     }
 
@@ -233,11 +230,20 @@ impl StoreBackend for EngineBackend {
         if name.is_empty() || name.contains(['/', '\\']) || name.starts_with('.') {
             return None;
         }
+        // First the icon of the signed offer in the cache, then the one kept at install (its name known from one read of the
+        // folder per listing), else none (the letter).
+        if let Some(cached) = self.cached_icon_of(name) {
+            return Some(cached);
+        }
         let mut icons = self.icons.lock().unwrap_or_else(PoisonError::into_inner);
         let known = icons.get_or_insert_with(|| icon_names(&self.root.join("icons")));
         known
             .contains(name)
             .then(|| self.root.join("icons").join(format!("{name}.png")))
+    }
+
+    fn load_icons(&self) -> Vec<String> {
+        self.load_icons_at(SystemTime::now())
     }
 
     fn details(&self, name: &str) -> InstalledDetails {

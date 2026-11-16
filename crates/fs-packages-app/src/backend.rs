@@ -1,6 +1,5 @@
-//! Pattern: Strategy / Port. What the window needs from the store, shaped like `store.capnp`
-//! (`sources`, `addSource`, `setEnabled`, `removeSource`, `available`, `installed`, `install`/`update` with
-//! phases). The in-process engine implements it now; a Cap'n Proto client can do it later.
+//! Pattern: Strategy / Port. What the window needs from the store, shaped like `store.capnp` (`sources`, `addSource`,
+//! `setEnabled`, `removeSource`, `available`, `installed`, `install`/`update` with phases); a Cap'n Proto client can do it later.
 
 use std::sync::Arc;
 
@@ -227,8 +226,7 @@ pub trait StoreBackend: Send + Sync {
     /// # Errors
     /// `BackendError` when the list cannot be read.
     fn installed(&self) -> Result<Vec<InstalledRow>, BackendError>;
-    /// The format this system takes: the package of the system (rpm, deb) when the store itself came that way, else
-    /// the archive. Only tells what an install will do (the preview), changes nothing. Default: the archive.
+    /// The format this system takes (the system package when the store came that way, else the archive); the preview only. Default: archive.
     fn system_format(&self) -> Format {
         Format::TarGz
     }
@@ -240,8 +238,11 @@ pub trait StoreBackend: Send + Sync {
     fn icon_path(&self, _name: &str) -> Option<std::path::PathBuf> {
         None
     }
-    /// Takes the program `name` away (rpm: `pkexec dnf remove`; unpacked: deleted) and forgets it in the
-    /// register. The data of the person stays.
+    /// Fetches the icons the signed catalogs name into the icon cache (slow: worker thread, never under the lock); returns what failed.
+    fn load_icons(&self) -> Vec<String> {
+        Vec::new()
+    }
+    /// Takes the program `name` away (rpm: `pkexec dnf remove`; unpacked: deleted), forgets it in the register; the data stays.
     ///
     /// # Errors
     /// A developer text when it could not be removed (for example when the program runs).

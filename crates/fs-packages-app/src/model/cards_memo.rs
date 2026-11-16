@@ -12,6 +12,7 @@ use std::sync::Arc;
 
 use super::cards::Card;
 use super::store::StoreModel;
+use super::types::Problem;
 
 /// The kept cards, inside the model.
 #[derive(Debug, Clone, Default)]
@@ -20,6 +21,8 @@ pub(super) struct CardMemo {
     pub(super) kept: RefCell<Option<(u64, Arc<Vec<Card>>)>>,
     /// How often the cards were computed (for tests of the cache).
     pub(super) builds: Cell<usize>,
+    /// How many icon rounds finished (icon files are not in the rows, so the kept cards need this to notice them).
+    pub(super) icon_rounds: u32,
 }
 
 /// Writes text straight into a hasher (no string is built).
@@ -40,7 +43,7 @@ impl StoreModel {
         // Debug text of the inputs: a new field of a row changes the fingerprint without anyone remembering to add it.
         let _ = write!(
             sink,
-            "{:?}|{:?}|{:?}|{:?}|{:?}|{:?}|{:?}|{:?}|{:?}|{}",
+            "{:?}|{:?}|{:?}|{:?}|{:?}|{:?}|{:?}|{:?}|{:?}|{}|{}",
             self.available,
             self.installed,
             self.offers,
@@ -55,6 +58,7 @@ impl StoreModel {
             ),
             self.ui.launch,
             self.catalog_read,
+            self.ui.memo.icon_rounds,
             fs_packages_core::language::from_environment(),
         );
         sink.0.finish()
@@ -72,6 +76,14 @@ impl StoreModel {
         let cards = Arc::new(self.compute_cards());
         *self.ui.memo.kept.borrow_mut() = Some((key, Arc::clone(&cards)));
         cards
+    }
+
+    /// Tells what did not work while icons were fetched (one line per package), with the other problems. A finished round
+    /// also makes the kept cards be computed again, so a new icon file shows.
+    pub fn add_icon_problems(&mut self, lines: Vec<String>) {
+        self.ui.memo.icon_rounds = self.ui.memo.icon_rounds.wrapping_add(1);
+        self.problems
+            .extend(lines.into_iter().map(Problem::Backend));
     }
 
     /// How often the cards were computed since the model was made.

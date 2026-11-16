@@ -2152,6 +2152,8 @@ dependencies = [
  "fs-packages-pgp",
  "fs-packages-sources",
  "libc",
+ "sha2 0.10.9",
+ "tempfile",
 ]
 
 [[package]]

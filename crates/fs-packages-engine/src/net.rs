@@ -121,3 +121,29 @@ pub fn clone_catalog(url: &str, dest: &Path) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
     Ok(())
 }
+
+/// Downloads an icon: https only, one try, at most [`crate::icons::MAX_ICON`] bytes (a larger answer is refused, not cut).
+#[derive(Debug, Default)]
+pub struct IconFetch;
+
+impl Fetch for IconFetch {
+    fn get(&self, url: &str) -> Result<Vec<u8>, String> {
+        if !url.starts_with("https://") {
+            return Err(format!("{url}: only https addresses are downloaded"));
+        }
+        let agent = ureq::AgentBuilder::new()
+            .timeout_connect(std::time::Duration::from_secs(20))
+            .timeout_read(std::time::Duration::from_secs(30))
+            .build();
+        let resp = agent.get(url).call().map_err(|e| format!("{url}: {e}"))?;
+        let mut out = Vec::new();
+        resp.into_reader()
+            .take(crate::icons::MAX_ICON as u64 + 1)
+            .read_to_end(&mut out)
+            .map_err(|e| format!("{url}: {e}"))?;
+        if out.len() > crate::icons::MAX_ICON {
+            return Err(format!("{url}: larger than an icon may be"));
+        }
+        Ok(out)
+    }
+}
