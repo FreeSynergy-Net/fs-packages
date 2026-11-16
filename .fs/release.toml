@@ -1,0 +1,2 @@
+# Required runs by workflow name: check (check.yml:2) and typing-test (typing-test.yml, UI repo).
+required = ["check", "typing-test"]
