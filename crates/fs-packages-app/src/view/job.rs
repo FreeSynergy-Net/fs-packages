@@ -76,6 +76,13 @@ pub(super) fn start_refresh(shared: &Shared) {
             }
         }
         rebuild();
+        // The list is drawn; now the icons of the signed catalogs come into the cache, and the cards are drawn again.
+        let backend = locked(&shared).backend();
+        let problems =
+            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| backend.load_icons()))
+                .unwrap_or_else(|_| vec![words::JOB_PANICKED.to_owned()]);
+        locked(&shared).add_icon_problems(problems);
+        rebuild();
     });
 }
 

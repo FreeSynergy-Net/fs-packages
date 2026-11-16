@@ -10,6 +10,9 @@ pub mod demo;
 mod demo_data;
 pub mod engine;
 mod engine_after;
+#[cfg(test)]
+mod engine_icon_tests;
+mod engine_icons;
 mod engine_job;
 mod engine_map;
 mod engine_read;

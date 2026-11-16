@@ -9,6 +9,7 @@ mod deb;
 mod end;
 mod ending;
 mod facets;
+mod icon_cache;
 mod icons;
 mod links;
 mod lock;
@@ -36,6 +37,10 @@ pub use deb::{Deb, remove_deb, remove_native};
 pub use end::{CALL_LIMIT, Ended, end_server, end_servers, server_info, socket_of, stop_servers};
 pub use facets::{
     Form, default_apps_dir, ensure_own_menu_entry, link_facets, link_facets_for, unlink_facets,
+};
+pub use icon_cache::{
+    KEEP_UNUSED, Wanted, cache_dir, cache_dir_from_environment, cached_bytes, cached_icon,
+    fetch_into_cache, fetch_missing, prune,
 };
 pub use icons::store_icon;
 pub use links::{default_bin_dir, default_system_dir, link_programs, unlink_programs};

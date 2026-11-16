@@ -25,3 +25,7 @@ fs-interfaces = { git = "https://github.com/FreeSynergy/fs-interfaces", tag = "v
 [target.'cfg(unix)'.dependencies]
 # O_NOFOLLOW for the log of a started program (already in the lock through other crates).
 libc = "0.2"
+
+[dev-dependencies]
+sha2 = "0.10"
+tempfile = "3"
