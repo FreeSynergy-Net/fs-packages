@@ -4,9 +4,11 @@
 
 ### English
 - **Renamed (names wave):** the store program is now `fs-packages` (crates `fs-packages-*`, binary `fs-packages`, program name "FreeSynergy.Packages", app id `net.freesynergy.Packages`, environment `FS_PACKAGES_*`, data folder `~/.local/share/fs-packages`). The first menu is "Packages". No fallback to the old names and no migration. The reference source is `https://github.com/FreeSynergy/Catalog`; help links point to `help/packages`. History below keeps the old names.
+- Launcher: starting a program passes no unnecessary arguments (`setsid_words`), regression test.
 
 ### Deutsch
 - **Umbenannt (Namenswelle):** Das Store-Programm heißt jetzt `fs-packages` (Crates `fs-packages-*`, Binärdatei `fs-packages`, Programmname "FreeSynergy.Packages", App-ID `net.freesynergy.Packages`, Umgebung `FS_PACKAGES_*`, Datenordner `~/.local/share/fs-packages`). Das erste Menü heißt "Packages". Kein Rückfall auf die alten Namen, keine Migration. Die Referenzquelle ist `https://github.com/FreeSynergy/Catalog`; Hilfe-Links zeigen auf `help/packages`. Die Geschichte unten behält die alten Namen.
+- Launcher: Programmstart ohne unnötige Argumente (`setsid_words`), Regressionstest.
 
 ## 0.0.17
 
