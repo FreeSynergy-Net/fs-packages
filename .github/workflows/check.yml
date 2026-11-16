@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   check:
-    uses: FreeSynergy/fs-release/.github/workflows/check.yml@v0.0.4
+    uses: FreeSynergy/fs-release/.github/workflows/check.yml@f1211066d0072c6319678659e845c19ae4384bd0
     with:
       # Software Vulkan (lavapipe): tests/window_draws.rs draws the shell into a picture; a runner has no GPU
       software-gpu: true
