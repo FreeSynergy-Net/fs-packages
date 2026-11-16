@@ -4,7 +4,7 @@
 //! it stays in `FS_PACKAGES_SHOTS` if that is set (scene `more-unten`).
 
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
+use std::sync::{Arc, Mutex, MutexGuard, Once, PoisonError};
 
 use fs_components::blinc::core::owner::BuildScope;
 use fs_components::blinc::core::reactive::global_graph;
@@ -27,6 +27,14 @@ use fs_packages_app::model::StoreModel;
 use fs_packages_app::view::store_app;
 
 static ONE_AT_A_TIME: Mutex<()> = Mutex::new(());
+static ENGLISH: Once = Once::new();
+
+/// The picture and the checks do not depend on the environment: the window speaks English (`FS_LANG=en`), set once before any
+/// text is read.
+fn english() {
+    // SAFETY: runs once, before the window reads the environment; the tests of this file take `ONE_AT_A_TIME` first.
+    ENGLISH.call_once(|| unsafe { std::env::set_var("FS_LANG", "en") });
+}
 
 /// Left, top, width, height.
 type Bounds = (f32, f32, f32, f32);
@@ -65,6 +73,7 @@ fn close_menus() {
 /// The demo store, `w` x `h`, the cards page.
 fn window(w: f32, h: f32) -> Window {
     let serial = ONE_AT_A_TIME.lock().unwrap_or_else(PoisonError::into_inner);
+    english();
     let parts = parts(true);
     let mut model = StoreModel::new(parts.backend).with_updates(parts.updates);
     fs_components_render::use_style(None);
