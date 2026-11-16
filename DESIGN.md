@@ -504,4 +504,5 @@ Craft style and the theme adapter (`fs_components_render::use_style`) come from 
 ## Lift to fs-components v0.0.23 (0.0.17)
 - **Dependencies:** `fs-components` v0.0.23 (57ddfd3; was v0.0.13), `fs-interfaces` v0.0.19 and Blinc `fs-blinc-3.1#cf925af1` unchanged. Only `crates/fs-store-app/Cargo.toml` names fs-components; the lock was updated with `cargo update -p fs-components`. No source file changed: the API changes between v0.0.13 and v0.0.23 do not touch what the store uses.
 - **Not used yet:** the new blocks (license dialog, confirm dialog, toast, switch, segmented) wait for the software pilot, stage 3.
+- **Only visible effect:** Craft uses the system mono font when JetBrains Mono is not installed (fs-components 0.0.23, 16b: mono list); text about 1 px lower, layout and colours the same.
 - **CI:** fs-release pinned to v0.0.9 (`6ebd3f8`) in `check.yml`, `release.yml` and `typing-test.yml`.

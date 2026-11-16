@@ -6,11 +6,13 @@
 - **Lift to fs-components v0.0.23** (was v0.0.13; Blinc stays `fs-blinc-3.1`, fs-interfaces stays v0.0.19). No source change was needed: the workspace builds and tests against the new tag as it is. The lock gains `fs-components-mf2`, `fs-components-words` and the `mf2` crates (3.0.0) that fs-components pulls in.
 - **CI:** all `uses:` lines of fs-release (check, release, setup-rust, typing-test) are pinned to v0.0.9 (`6ebd3f8`, comment `# v0.0.9`).
 - The new blocks of fs-components (license dialog, confirm dialog, toast, switch, segmented) are not used yet; the store keeps its own dialogs.
+- **Only visible effect:** Craft uses the system mono font when JetBrains Mono is not installed (fs-components 0.0.23, 16b: mono list); text sits about 1 px lower, layout and colours are the same.
 
 ### Deutsch
 - **Lift auf fs-components v0.0.23** (vorher v0.0.13; Blinc bleibt `fs-blinc-3.1`, fs-interfaces bleibt v0.0.19). Am Quelltext war nichts zu ändern: Der Workspace baut und besteht die Tests mit dem neuen Tag unverändert. Das Lock bekommt `fs-components-mf2`, `fs-components-words` und die `mf2`-Crates (3.0.0), die fs-components mitbringt.
 - **CI:** alle `uses:`-Zeilen von fs-release (check, release, setup-rust, typing-test) stehen auf v0.0.9 (`6ebd3f8`, Kommentar `# v0.0.9`).
 - Die neuen Bausteine von fs-components (Lizenzdialog, Bestätigungsdialog, Toast, Schalter, Segmente) werden noch nicht benutzt; der Store behält seine eigenen Dialoge.
+- **Einzige sichtbare Wirkung:** Craft nutzt die System-Mono-Schrift, wenn JetBrains Mono nicht installiert ist (fs-components 0.0.23, 16b: Mono-Liste); der Text sitzt etwa 1 px tiefer, Layout und Farben sind gleich.
 
 ## 0.0.16
 
