@@ -1,14 +1,16 @@
 # Changelog
 
-## Unreleased
+## 0.0.18
 
 ### English
 - **Renamed (names wave):** the store program is now `fs-packages` (crates `fs-packages-*`, binary `fs-packages`, program name "FreeSynergy.Packages", app id `net.freesynergy.Packages`, environment `FS_PACKAGES_*`, data folder `~/.local/share/fs-packages`). The first menu is "Packages". No fallback to the old names and no migration. The reference source is `https://github.com/FreeSynergy/Catalog`; help links point to `help/packages`. History below keeps the old names.
 - Launcher: starting a program passes no unnecessary arguments (`setsid_words`), regression test.
+- **Three-dot menu of a tile = the dropdown block of fs-components v0.0.24** (`fs_components_widgets::dropdown`). Blinc's own menu flipped only when less than 96 px were free below the trigger and ignored the height of the panel, so at the bottom edge of the window the last lines were cut off. The block puts the panel below, above (flip) or holds it inside the window; the store has no position logic of its own. The pin of all fs-components crates is v0.0.24; fs-interfaces is v0.0.22 (the version fs-components uses, so the lock holds one copy). Test `more_menu_flip` (the window is driven without opening one; menu at the bottom edge opens above the trigger, inside the window; picture `more-unten`).
 
 ### Deutsch
 - **Umbenannt (Namenswelle):** Das Store-Programm heißt jetzt `fs-packages` (Crates `fs-packages-*`, Binärdatei `fs-packages`, Programmname "FreeSynergy.Packages", App-ID `net.freesynergy.Packages`, Umgebung `FS_PACKAGES_*`, Datenordner `~/.local/share/fs-packages`). Das erste Menü heißt "Packages". Kein Rückfall auf die alten Namen, keine Migration. Die Referenzquelle ist `https://github.com/FreeSynergy/Catalog`; Hilfe-Links zeigen auf `help/packages`. Die Geschichte unten behält die alten Namen.
 - Launcher: Programmstart ohne unnötige Argumente (`setsid_words`), Regressionstest.
+- **Drei-Punkte-Menü einer Kachel = Dropdown-Baustein von fs-components v0.0.24** (`fs_components_widgets::dropdown`). Das eigene Menü von Blinc klappte nur um, wenn unter dem Auslöser weniger als 96 px frei waren, und kannte die Höhe des Menüs nicht; am unteren Fensterrand wurden die letzten Zeilen abgeschnitten. Der Baustein setzt das Menü unter, über (Flip) oder in das Fenster; der Store hat keine eigene Positionslogik mehr. Der Pin aller fs-components-Crates ist v0.0.24; fs-interfaces ist v0.0.22 (die Version, die fs-components nutzt; das Lock hat nur eine Kopie). Test `more_menu_flip` (das Fenster wird ohne Öffnen gesteuert; Menü am unteren Rand öffnet über dem Auslöser, im Fenster; Bild `more-unten`).
 
 ## 0.0.17
 
