@@ -4,6 +4,7 @@
 //! question before any work), `styles`.
 
 mod detail;
+mod launch;
 mod list;
 mod preview;
 mod styles;

@@ -1,4 +1,4 @@
-//! Pattern: none (the words of a started program that failed or has a log, in English and German; sentences with named placeholders,
+//! Pattern: none (the words of a started program that failed, ended at once, shows no sign of life or has a log, in English and German; sentences with named placeholders,
 //! the values are put in by `words::fill`).
 
 use crate::words_lang::Lang;
@@ -22,6 +22,42 @@ pub fn ended_by_signal(lang: Lang) -> &'static str {
         Lang::De => {
             "{name} wurde gleich nach dem Start vom System gestoppt. Das Ende des Protokolls:"
         }
+    }
+}
+
+/// The program ended right after the start without a failure (exit code 0). A starter that hands over to another process looks the same.
+/// Placeholder: `{name}`.
+#[must_use]
+pub fn ended_at_once(lang: Lang) -> &'static str {
+    match lang {
+        Lang::En => {
+            "{name} ended right after the start, without an error (exit code 0). If it handed over to another process, that is fine; if no window came up, the end of its log may tell why:"
+        }
+        Lang::De => {
+            "{name} beendete sich gleich nach dem Start ohne Fehler (Exit-Code 0). Hat es an einen anderen Prozess \u{fc}bergeben, ist das in Ordnung; kam kein Fenster, sagt das Ende des Protokolls vielleicht warum:"
+        }
+    }
+}
+
+/// The program runs but shows no sign of life. Placeholders: `{name}`, `{seconds}`.
+#[must_use]
+pub fn no_sign_of_life(lang: Lang) -> &'static str {
+    match lang {
+        Lang::En => {
+            "{name} has been running for {seconds} s and shows no sign of life yet (no window). It may be waiting for something; its log may tell. Not responding: stop it?"
+        }
+        Lang::De => {
+            "{name} l\u{e4}uft seit {seconds} s und zeigt noch kein Lebenszeichen (kein Fenster). Es wartet vielleicht auf etwas; das Protokoll sagt es eventuell. Reagiert nicht: beenden?"
+        }
+    }
+}
+
+/// The button that stops the program the store started.
+#[must_use]
+pub fn stop_program(lang: Lang) -> &'static str {
+    match lang {
+        Lang::En => "Stop it",
+        Lang::De => "Beenden",
     }
 }
 

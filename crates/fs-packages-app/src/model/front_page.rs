@@ -7,7 +7,8 @@ use fs_packages_core::{Capability, Description, Provider, Resolution, resolve};
 use crate::words;
 use crate::words_front as w;
 
-use super::cards::{Card, Placeholder};
+use super::cards::Card;
+use super::cards_placeholder::Placeholder;
 use super::front_text::{kind_text, or_unknown, trust_sentence, trust_word};
 use super::front_types::NeedsState;
 use super::store::StoreModel;

@@ -235,13 +235,13 @@ pub(super) fn page(
     if p.icon_missing {
         title = title.child(label_dim(w::ICON_MISSING));
     }
-    // A locked Open says why, in words, right under the name
     if let Some(why) = p.card.open_blocked.filter(|_| p.card.installed.is_some()) {
         title = title.child(text(why).class("craft-sub"));
     }
     if let Some(why) = &p.card.install_blocked {
         title = title.child(text(why).class("craft-sub"));
     }
+    title = super::tile_launch::launch_part(title, &p.card, shared, launcher); // note, log, stop
     let mut links = div().flex_row().gap(2.0);
     if !p.homepage.is_empty() {
         let n = p.card.name.clone();

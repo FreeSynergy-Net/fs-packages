@@ -11,6 +11,7 @@ mod preview;
 mod styles;
 mod table;
 mod tile;
+mod tile_launch;
 
 pub(super) use bar::{BAR_H, top_bar};
 pub(super) use layout::{search_field, storefront};

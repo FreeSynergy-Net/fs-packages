@@ -8,6 +8,7 @@ mod card_text;
 mod cards;
 mod cards_frame;
 mod cards_index;
+mod cards_placeholder;
 mod cards_ui;
 mod face;
 mod fetch;
@@ -37,10 +38,9 @@ mod update_text;
 mod updates;
 
 pub use card_text::columns;
-pub use cards::{
-    Buttons, Card, CardState, OpenWidth, Placeholder, Working, buttons_for, placeholder,
-};
+pub use cards::{Buttons, Card, CardState, OpenWidth, Working, buttons_for};
 pub use cards_frame::FrameCards;
+pub use cards_placeholder::{Placeholder, placeholder};
 pub use cards_ui::CardsUi;
 pub use fetch::{Fetched, fetch};
 pub use front_page::{CapLine, CapabilityLines, DescriptionView, PackagePage, ReleaseLine};

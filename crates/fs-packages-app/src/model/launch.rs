@@ -58,20 +58,46 @@ impl StoreModel {
             }
         }
         for report in launcher.take_reports() {
-            let command = match &report {
-                LaunchReport::Failed { command, .. }
-                | LaunchReport::LogUnwritable { command, .. } => command.clone(),
-            };
+            let command = report.command().to_owned();
             let Some(name) = self.ui.launch.cards.get(&command).cloned() else {
                 continue;
             };
             if let Some(log) = launcher.log_path(&command) {
                 self.ui.launch.logs.insert(name.clone(), log);
             }
-            self.ui.launch.notes.insert(name, report);
+            if matches!(report, LaunchReport::SignOfLife { .. }) {
+                // The hint that nothing showed up is over.
+                self.ui.launch.notes.remove(&name);
+            } else {
+                self.ui.launch.notes.insert(name, report);
+            }
             changed = true;
         }
         changed
+    }
+
+    /// Stops the program of card `name` that this store started (only that process, by its handle). True when there was one.
+    pub fn stop_program(&mut self, name: &str, launcher: &dyn Launcher) -> bool {
+        let command = self
+            .ui
+            .launch
+            .cards
+            .iter()
+            .find(|(_, card)| card.as_str() == name)
+            .map(|(command, _)| command.clone());
+        let stopped = command.is_some_and(|command| launcher.stop(&command));
+        if stopped {
+            self.ui.launch.notes.remove(name);
+        }
+        stopped
+    }
+
+    /// True when the note of card `name` is "no sign of life", so the tile offers "Stop it".
+    pub(super) fn can_stop(&self, name: &str) -> bool {
+        matches!(
+            self.ui.launch.notes.get(name),
+            Some(LaunchReport::NoSignOfLife { .. })
+        )
     }
 
     /// Opens the log of card `name` with the system's opener; a failure is a problem.
@@ -95,7 +121,16 @@ impl StoreModel {
         let lang = Lang::current();
         let title = self.title(name);
         match self.ui.launch.notes.get(name) {
-            None => Vec::new(),
+            None | Some(LaunchReport::SignOfLife { .. }) => Vec::new(),
+            Some(LaunchReport::EndedAtOnce { lines, .. }) => {
+                let mut out = vec![words::fill(w::ended_at_once(lang), &[("name", &title)])];
+                out.extend(lines.iter().cloned());
+                out
+            }
+            Some(LaunchReport::NoSignOfLife { seconds, .. }) => vec![words::fill(
+                w::no_sign_of_life(lang),
+                &[("name", &title), ("seconds", &seconds.to_string())],
+            )],
             Some(LaunchReport::Failed { code, lines, .. }) => {
                 let head = match code {
                     Some(code) => words::fill(

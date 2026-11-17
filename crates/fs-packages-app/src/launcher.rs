@@ -1,12 +1,14 @@
 //! Pattern: Strategy / Port (starting another program sits behind a trait, so the model is tested with a fake).
 
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
+use std::process::{Child, Command, Stdio};
 use std::sync::Arc;
 use std::time::Duration;
 
+use crate::launch_life::{SignProbe, system_probe};
 use crate::launch_log::{create_private_dir, log_file, open_fresh, state_dir};
-use crate::launch_watch::{LaunchReport, OBSERVE, Reports, Watch, watch};
+use crate::launch_pump::PUMP_ARG;
+use crate::launch_watch::{HANG_AFTER, LaunchReport, OBSERVE, Reports, Running, Watch, watch};
 
 /// Starts programs as processes of their own.
 pub trait Launcher: Send + Sync {
@@ -26,6 +28,10 @@ pub trait Launcher: Send + Sync {
     fn log_path(&self, _command: &str) -> Option<PathBuf> {
         None
     }
+    /// Ends the process the store itself started as `command` (by its handle, never by name). True when there was one. False by default.
+    fn stop(&self, _command: &str) -> bool {
+        false
+    }
     /// Opens a web address with the system's opener (`xdg-open`) as a process of its own.
     ///
     /// # Errors
@@ -34,14 +40,19 @@ pub trait Launcher: Send + Sync {
 }
 
 /// The real launcher: a program is a direct child in a process group of its own (it survives the store and its terminal), its output goes
-/// to `launch-<name>.log` in the state folder, and a thread watches it for the first seconds ([`crate::launch_watch`]). The opener for
-/// addresses stays `setsid -f` when available.
+/// through a pipe to the log pump ([`crate::launch_pump`]), which keeps `launch-<name>.log` in the state folder at 64 KB at most for as
+/// long as the program writes, and a thread watches the program ([`crate::launch_watch`]). The opener for addresses stays `setsid -f`
+/// when available.
 #[derive(Clone)]
 pub struct ProcessLauncher {
     extra: PathBuf,
     state: Option<PathBuf>,
     reports: Reports,
+    running: Running,
     observe: Duration,
+    hang_after: Duration,
+    probe: SignProbe,
+    pump: Option<PathBuf>,
     redraw: Option<Arc<dyn Fn() + Send + Sync>>,
 }
 
@@ -63,7 +74,11 @@ impl ProcessLauncher {
             extra,
             state: state_dir(),
             reports: Reports::default(),
+            running: Running::default(),
             observe: OBSERVE,
+            hang_after: HANG_AFTER,
+            probe: system_probe(),
+            pump: pump_exe(),
             redraw: None,
         }
     }
@@ -82,6 +97,27 @@ impl ProcessLauncher {
         self
     }
 
+    /// After how long a program that shows no sign of life is reported (default 8 s; tests make it shorter).
+    #[must_use]
+    pub fn with_hang_after(mut self, after: Duration) -> Self {
+        self.hang_after = after;
+        self
+    }
+
+    /// How the launcher tells a sign of life (tests decide the answer; the default reads the loaded libraries of the child on Linux).
+    #[must_use]
+    pub fn with_probe(mut self, probe: SignProbe) -> Self {
+        self.probe = probe;
+        self
+    }
+
+    /// The program that runs as the log pump, called as `<pump> log-pump <log>` (default: this program itself).
+    #[must_use]
+    pub fn with_pump(mut self, pump: PathBuf) -> Self {
+        self.pump = Some(pump);
+        self
+    }
+
     /// `redraw` is called after a report was queued, so the window shows it without a click.
     #[must_use]
     pub fn with_redraw(mut self, redraw: Arc<dyn Fn() + Send + Sync>) -> Self {
@@ -89,11 +125,11 @@ impl ProcessLauncher {
         self
     }
 
-    /// Makes the log of `command` and returns it with the two ends the program writes to. When it cannot be made, the cause is
-    /// queued as a report (never silent) and the program gets nothing attached.
-    fn open_log(&self, command: &str) -> (Option<PathBuf>, Stdio, Stdio) {
+    /// Makes the log of `command` and the pipe into it. Returns the log, the two ends the program writes to and the pump. When the log or
+    /// the pump cannot be made, the cause is queued as a report (never silent) and the program gets nothing attached.
+    fn open_log(&self, command: &str) -> Logged {
         match self.make_log(command) {
-            Ok((path, out, err)) => (Some(path), out.into(), err.into()),
+            Ok((path, out, err, pump)) => (Some(path), out.into(), err.into(), Some(pump)),
             Err(cause) => {
                 self.reports.push(LaunchReport::LogUnwritable {
                     command: command.to_owned(),
@@ -102,12 +138,12 @@ impl ProcessLauncher {
                 if let Some(redraw) = &self.redraw {
                     redraw();
                 }
-                (None, Stdio::null(), Stdio::null())
+                (None, Stdio::null(), Stdio::null(), None)
             }
         }
     }
 
-    fn make_log(&self, command: &str) -> Result<(PathBuf, std::fs::File, std::fs::File), String> {
+    fn make_log(&self, command: &str) -> Result<Made, String> {
         let dir = self
             .state
             .as_ref()
@@ -115,9 +151,29 @@ impl ProcessLauncher {
         create_private_dir(dir).map_err(|e| format!("{}: {e}", dir.display()))?;
         let path = log_file(dir, command);
         let at = |e: std::io::Error| format!("{}: {e}", path.display());
-        let out = open_fresh(&path).map_err(at)?;
-        let err = out.try_clone().map_err(at)?;
-        Ok((path, out, err))
+        // Made and wiped here (without following a link); the pump fills it.
+        drop(open_fresh(&path).map_err(at)?);
+        let exe = self
+            .pump
+            .as_ref()
+            .ok_or_else(|| "the log pump (this program) was not found".to_owned())?;
+        let (reader, writer) = std::io::pipe().map_err(at)?;
+        let mut pump = Command::new(exe);
+        pump.arg(PUMP_ARG)
+            .arg(&path)
+            .stdin(reader)
+            .stdout(Stdio::null())
+            .stderr(Stdio::null());
+        #[cfg(unix)]
+        {
+            use std::os::unix::process::CommandExt;
+            pump.process_group(0);
+        }
+        let pump = pump
+            .spawn()
+            .map_err(|e| format!("log pump {}: {e}", exe.display()))?;
+        let err = writer.try_clone().map_err(at)?;
+        Ok((path, writer, err, pump))
     }
 
     fn find(&self, command: &str) -> Option<PathBuf> {
@@ -127,6 +183,22 @@ impl ProcessLauncher {
             .map(|dir| dir.join(command))
             .find(|p| is_file(p))
     }
+}
+
+/// The log, the output ends of the program and the pump.
+type Logged = (Option<PathBuf>, Stdio, Stdio, Option<Child>);
+/// The log, the two ends of the pipe into the pump and the pump.
+type Made = (PathBuf, std::io::PipeWriter, std::io::PipeWriter, Child);
+
+/// This program as the log pump. After an update of the store the running file may have been replaced: Linux then says `... (deleted)`,
+/// and the file at the same path is the newer version of this program, which knows the pump as well.
+fn pump_exe() -> Option<PathBuf> {
+    let exe = std::env::current_exe().ok()?;
+    let text = exe.to_string_lossy();
+    Some(
+        text.strip_suffix(" (deleted)")
+            .map_or(exe.clone(), PathBuf::from),
+    )
 }
 
 fn is_file(path: &Path) -> bool {
@@ -178,7 +250,7 @@ impl Launcher for ProcessLauncher {
             return Err("not found".to_owned());
         }
         let path = self.find(command).ok_or_else(|| "not found".to_owned())?;
-        let (log, out, err) = self.open_log(command);
+        let (log, out, err, pump) = self.open_log(command);
         let mut process = Command::new(&path);
         process.stdin(Stdio::null()).stdout(out).stderr(err);
         #[cfg(unix)]
@@ -192,8 +264,12 @@ impl Launcher for ProcessLauncher {
             Watch {
                 command: command.to_owned(),
                 log,
+                pump,
                 reports: self.reports.clone(),
+                running: self.running.clone(),
                 observe: self.observe,
+                hang_after: self.hang_after,
+                probe: Arc::clone(&self.probe),
                 redraw: self.redraw.clone(),
             },
         );
@@ -207,6 +283,10 @@ impl Launcher for ProcessLauncher {
     fn log_path(&self, command: &str) -> Option<PathBuf> {
         let dir = self.state.as_ref()?;
         Some(log_file(dir, command)).filter(|p| is_file(p))
+    }
+
+    fn stop(&self, command: &str) -> bool {
+        self.running.stop(command)
     }
 
     fn open_url(&self, url: &str) -> Result<(), String> {

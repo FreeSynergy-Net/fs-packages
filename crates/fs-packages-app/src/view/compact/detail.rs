@@ -260,6 +260,7 @@ pub(super) fn pane(
     if let Some(why) = &p.card.install_blocked {
         pane = pane.child(text(why).class("fs-c-sub"));
     }
+    pane = super::launch::launch_part(pane, &p.card, shared, launcher);
     if let Some(r) = running(&p, shared, width) {
         pane = pane.child(r);
     }
