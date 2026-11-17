@@ -13,9 +13,12 @@ use fs_packages_app::demo::parts;
 use fs_packages_app::model::StoreModel;
 use fs_packages_app::view::store_app;
 
-fn shoot(lang: &str, page: Option<&str>, file: &str) {
+fn shoot(lang: &str, page: Option<&str>, scheme: ColorScheme, file: &str) {
     // SAFETY: the only test of this file, nothing reads the environment in parallel.
     unsafe { std::env::set_var("FS_LANG", lang) };
+    // The renderer sets its theme up again from this variable (`draw_to_png`), so the scheme must be named here too.
+    let dark = matches!(scheme, ColorScheme::Dark);
+    unsafe { std::env::set_var("FS_RENDER_SCHEME", if dark { "dark" } else { "light" }) };
     let parts = parts(true);
     let mut model = StoreModel::new(parts.backend).with_updates(parts.updates);
     fs_components_render::use_style(None);
@@ -34,7 +37,7 @@ fn shoot(lang: &str, page: Option<&str>, file: &str) {
     let model = Arc::new(Mutex::new(model));
     let app = store_app(&model, &parts.launcher).unwrap();
     let bundle = fs_components_render::bundle(&app.styles());
-    ThemeState::init(bundle, ColorScheme::Light);
+    ThemeState::init(bundle, scheme);
     if !BlincContextState::is_initialized() {
         BlincContextState::init_with_callback(
             global_graph(),
@@ -60,8 +63,16 @@ fn shoot(lang: &str, page: Option<&str>, file: &str) {
 
 #[test]
 fn tiles_and_page_show_the_prerelease_mark() {
-    for lang in ["de", "en"] {
-        shoot(lang, None, &format!("kacheln-{lang}.png"));
-        shoot(lang, Some("fs-people"), &format!("detailseite-{lang}.png"));
+    // Light and dark, German and English (user rule: a visible change is looked at in both colour schemes).
+    for (scheme, tone) in [(ColorScheme::Light, ""), (ColorScheme::Dark, "-dunkel")] {
+        for lang in ["de", "en"] {
+            shoot(lang, None, scheme, &format!("kacheln-{lang}{tone}.png"));
+            shoot(
+                lang,
+                Some("fs-people"),
+                scheme,
+                &format!("detailseite-{lang}{tone}.png"),
+            );
+        }
     }
 }

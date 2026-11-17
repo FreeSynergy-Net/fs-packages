@@ -22,6 +22,10 @@ pub struct Installed {
     /// Facet commands made for it (ADR 0063), so they can be taken away again.
     #[serde(default)]
     pub facets: Vec<String>,
+    /// Whether the installed release is a pre-release (`<release type="development">`). An entry without the note counts as stable, so
+    /// automatic updates never move it to a pre-release by themselves.
+    #[serde(default)]
+    pub prerelease: bool,
 }
 
 fn yes() -> bool {
@@ -83,6 +87,7 @@ impl Registry {
                 source: source.to_owned(),
                 auto_update: true,
                 facets: Vec::new(),
+                prerelease: false,
             }),
         }
     }
@@ -91,6 +96,13 @@ impl Registry {
     pub fn set_facets(&mut self, name: &str, facets: Vec<String>) {
         if let Some(e) = self.entries.iter_mut().find(|e| e.name == name) {
             e.facets = facets;
+        }
+    }
+
+    /// Notes whether the installed release is a pre-release.
+    pub fn set_prerelease(&mut self, name: &str, on: bool) {
+        if let Some(e) = self.entries.iter_mut().find(|e| e.name == name) {
+            e.prerelease = on;
         }
     }
 

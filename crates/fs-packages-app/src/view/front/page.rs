@@ -12,7 +12,7 @@ use crate::launcher::Launcher;
 use crate::model::{
     CapLine, CardState, DescriptionView, NeedsState, PackagePage, ReleaseLine, StoreModel,
 };
-use crate::view::card::{prerelease_badge, sized_logo};
+use crate::view::card::sized_logo;
 use crate::view::shell::{Shared, locked, rebuild};
 use crate::words;
 use crate::words_front as w;
@@ -225,14 +225,8 @@ pub(super) fn page(
     let Some(p) = model.package_page(name) else {
         return div().flex_col().child(text(words::NO_DESCRIPTION));
     };
-    let mut title = div()
-        .flex_col()
-        .flex_grow()
-        .min_w(0.0)
-        .gap(1.0)
-        .child(text(p.card.title.clone()).size(24.0).bold())
-        .child(text(caps(&format!("{} - {}", p.kind, p.version))).class("craft-caps-dim"))
-        .children(prerelease_badge(&p.card));
+    let mut title =
+        super::page_title::page_title(&p.card, caps(&format!("{} - {}", p.kind, p.version)));
     title = title.children(p.icon_missing.then(|| label_dim(w::ICON_MISSING)));
     if let Some(why) = p.card.open_blocked.filter(|_| p.card.installed.is_some()) {
         title = title.child(text(why).class("craft-sub"));

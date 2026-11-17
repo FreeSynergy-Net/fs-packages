@@ -41,3 +41,19 @@ fn auto_update_defaults_to_on() {
     .unwrap();
     assert!(Registry::load(&path).unwrap().get("a").unwrap().auto_update);
 }
+
+#[test]
+fn an_entry_without_the_prerelease_note_is_stable_and_the_note_survives_a_restart() {
+    let tmp = tempfile::tempdir().unwrap();
+    let path = tmp.path().join("installed.toml");
+    std::fs::write(
+        &path,
+        "[[package]]\nname='a'\nversion='1.0.0'\nsource='s'\n",
+    )
+    .unwrap();
+    let mut r = Registry::load(&path).unwrap();
+    assert!(!r.get("a").unwrap().prerelease);
+    r.set_prerelease("a", true);
+    r.save().unwrap();
+    assert!(Registry::load(&path).unwrap().get("a").unwrap().prerelease);
+}

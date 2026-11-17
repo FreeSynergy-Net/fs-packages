@@ -9,11 +9,6 @@ fn prerelease_word(lang: &str) -> &'static str {
     }
 }
 
-/// The marker word in the environment's language.
-pub(crate) fn prerelease_label() -> &'static str {
-    prerelease_word(&fs_packages_core::language::from_environment())
-}
-
 /// One line of `available`: `name version`, with `(pre-release)` after a pre-release (`<release type="development">`).
 pub(crate) fn available_line(e: &fs_packages_catalog::CatalogEntry) -> String {
     marked_line(e, &fs_packages_core::language::from_environment())
@@ -28,9 +23,50 @@ pub(crate) fn marked_line(e: &fs_packages_catalog::CatalogEntry, lang: &str) -> 
     }
 }
 
+/// One line of `check`: `name have -> offered`, with the pre-release word after a pre-release offer.
+pub(crate) fn check_line(
+    name: &str,
+    have: &fs_packages_core::Version,
+    offered: &fs_packages_catalog::CatalogEntry,
+    lang: &str,
+) -> String {
+    let mark = if offered.details.prerelease {
+        format!(" ({})", prerelease_word(lang))
+    } else {
+        String::new()
+    };
+    format!("{name} {have} -> {}{mark}", offered.version)
+}
+
+/// What an automatic update does with an offer: a stable installed release never moves to a pre-release by itself. `sweep` is true for
+/// `update --all` and the timer; a package the person NAMED (`update X`) takes the pre-release, because they asked for it.
+pub(crate) fn outcome_prerelease(
+    name: &str,
+    installed_prerelease: bool,
+    offered_prerelease: bool,
+    sweep: bool,
+    lang: &str,
+) -> crate::locked::Outcome {
+    use crate::locked::Outcome;
+    if !(sweep && offered_prerelease && !installed_prerelease) {
+        return Outcome::Proceed;
+    }
+    let word = prerelease_word(lang);
+    if lang.to_ascii_lowercase().starts_with("de") {
+        Outcome::Skip(format!(
+            "{name}: angeboten wird eine {word}; die automatische Aktualisierung bleibt bei der stabilen Version. Mit `fs-packages update {name}` von Hand übernehmen"
+        ))
+    } else {
+        Outcome::Skip(format!(
+            "{name}: a {word} is offered; automatic updates stay on the stable version. Take it by hand with `fs-packages update {name}`"
+        ))
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::marked_line;
+    use super::{check_line, marked_line, outcome_prerelease};
+    use crate::locked::Outcome;
 
     fn entry(dev: bool) -> fs_packages_catalog::CatalogEntry {
         let t = if dev { r#"type="development""# } else { "" };
@@ -54,5 +90,52 @@ mod tests {
             "a 0.0.3 (Vorabversion)"
         );
         assert_eq!(marked_line(&entry(false), "de"), "a 0.0.3");
+    }
+
+    #[test]
+    fn check_line_carries_the_mark_in_both_languages_only_for_a_prerelease() {
+        let have = fs_packages_core::Version::parse("0.0.2").unwrap();
+        assert_eq!(
+            check_line("a", &have, &entry(true), "de_DE.UTF-8"),
+            "a 0.0.2 -> 0.0.3 (Vorabversion)"
+        );
+        assert_eq!(
+            check_line("a", &have, &entry(true), "en_US.UTF-8"),
+            "a 0.0.2 -> 0.0.3 (pre-release)"
+        );
+        assert_eq!(
+            check_line("a", &have, &entry(false), "en"),
+            "a 0.0.2 -> 0.0.3"
+        );
+    }
+
+    #[test]
+    fn the_automatic_update_never_moves_stable_to_a_prerelease() {
+        // stable installed, pre-release offered, sweep: skipped with a note in each language
+        assert!(matches!(
+            outcome_prerelease("a", false, true, true, "en"),
+            Outcome::Skip(m) if m.contains("pre-release") && m.contains("update a")
+        ));
+        assert!(matches!(
+            outcome_prerelease("a", false, true, true, "de"),
+            Outcome::Skip(m) if m.contains("Vorabversion") && m.contains("update a")
+        ));
+        // counter-proofs: named by the person, a pre-release already installed, a stable offer
+        assert_eq!(
+            outcome_prerelease("a", false, true, false, "en"),
+            Outcome::Proceed
+        );
+        assert_eq!(
+            outcome_prerelease("a", true, true, true, "en"),
+            Outcome::Proceed
+        );
+        assert_eq!(
+            outcome_prerelease("a", false, false, true, "en"),
+            Outcome::Proceed
+        );
+        assert_eq!(
+            outcome_prerelease("a", true, false, true, "en"),
+            Outcome::Proceed
+        );
     }
 }

@@ -7,6 +7,7 @@ mod layout;
 mod list;
 mod nav;
 mod page;
+mod page_title;
 mod preview;
 mod styles;
 mod table;
