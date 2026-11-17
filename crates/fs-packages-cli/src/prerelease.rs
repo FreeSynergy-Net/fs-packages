@@ -63,6 +63,25 @@ pub(crate) fn outcome_prerelease(
     }
 }
 
+/// The sweep keeps a stable installed release on its release: true (after telling the person) when the offer is a pre-release.
+pub(crate) fn skips_prerelease(
+    root: &std::path::Path,
+    name: &str,
+    offered: &fs_packages_catalog::CatalogEntry,
+    sweep: bool,
+) -> bool {
+    use crate::locked::Outcome;
+    let lang = fs_packages_core::language::from_environment();
+    let installed = crate::updates::installed_prerelease(root, name);
+    match outcome_prerelease(name, installed, offered.details.prerelease, sweep, &lang) {
+        Outcome::Skip(note) => {
+            println!("{note}");
+            true
+        }
+        Outcome::Proceed | Outcome::Fail(_) => false,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::{check_line, marked_line, outcome_prerelease};
@@ -137,5 +156,23 @@ mod tests {
             outcome_prerelease("a", true, false, true, "en"),
             Outcome::Proceed
         );
+    }
+
+    #[test]
+    fn the_sweep_skips_a_prerelease_for_a_stable_install_and_the_register_decides() {
+        let tmp = tempfile::tempdir().unwrap();
+        let file = tmp.path().join("installed.toml");
+        std::fs::write(&file, "[[package]]\nname='a'\nversion='0.0.1'\nsource='s'\n[[package]]\nname='b'\nversion='0.0.1'\nsource='s'\nprerelease=true\n").unwrap();
+        let dev = entry(true);
+        // `a` is stable in the register: skipped; `b` is itself a pre-release: goes on; named by the person: goes on
+        assert!(super::skips_prerelease(tmp.path(), "a", &dev, true));
+        assert!(!super::skips_prerelease(tmp.path(), "b", &dev, true));
+        assert!(!super::skips_prerelease(tmp.path(), "a", &dev, false));
+        assert!(!super::skips_prerelease(
+            tmp.path(),
+            "a",
+            &entry(false),
+            true
+        ));
     }
 }
