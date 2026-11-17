@@ -4,9 +4,11 @@
 
 ### English
 - **"Pre-release" mark:** all 0.0.x versions are pre-releases. The catalog parser reads `type="development"` of the chosen `<release>` (AppStream; `stable` or no `type` = not a pre-release; the `type` of the component is not the release type) into `Details.prerelease`. Tile, details page and compact window show a "Pre-release" badge (German "Vorabversion", via `words_lang`); `fs-packages available` and `check` mark the line with `(pre-release)` / `(Vorabversion)`. Nothing is filtered out. Not on the wire yet: `store.capnp` / `packages_v1` are untouched (own run). Tests: catalog (development / stable / missing / component type / chosen release), CLI line, card and page.
+- **Pre-release badge in a neutral tone:** the badge uses the quiet (grey) tone, no longer the amber of "Update available"; the compact window uses the secondary text colour. The two marks are told apart by colour. Test: tone is `Quiet`, not `Warn`.
 
 ### Deutsch
 - **Kennzeichen „Vorabversion“:** Alle 0.0.x-Versionen sind Vorabversionen. Der Katalog-Parser liest `type="development"` an der gewählten `<release>` (AppStream; `stable` oder kein `type` = keine Vorabversion; der `type` der Komponente ist nicht der Release-Typ) nach `Details.prerelease`. Kachel, Detailseite und kompaktes Fenster zeigen ein Abzeichen „Vorabversion“ (englisch „Pre-release“, über `words_lang`); `fs-packages available` und `check` hängen `(Vorabversion)` bzw. `(pre-release)` an. Es wird nichts ausgefiltert. Noch nicht auf dem Draht: `store.capnp` / `packages_v1` bleiben unverändert (eigener Lauf). Tests: Katalog (development / stable / fehlt / Komponenten-Typ / gewählte Release), CLI-Zeile, Karte und Seite.
+- **Abzeichen „Vorabversion“ in neutralem Ton:** Das Abzeichen nutzt den ruhigen (grauen) Ton, nicht mehr das Bernstein von „Update verfügbar“; das kompakte Fenster nutzt die sekundäre Textfarbe. Beide Kennzeichen sind an der Farbe unterscheidbar. Test: Ton ist `Quiet`, nicht `Warn`.
 
 ## 0.0.18
 
