@@ -1,3 +1,4 @@
+#![cfg(unix)] // keys are written private (0600): Windows port open, see the test in src/keys.rs
 use std::fs;
 use std::path::Path;
 use std::time::Duration;

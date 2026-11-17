@@ -1,3 +1,4 @@
+#![cfg(unix)] // symbolic links: Windows port open
 mod common;
 
 use std::fs;

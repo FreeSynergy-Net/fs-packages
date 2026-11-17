@@ -34,16 +34,16 @@ impl ProcRunningCheck {
 }
 
 impl RunningCheck for ProcRunningCheck {
+    #[cfg(unix)]
     fn is_running(&self, name: &str) -> bool {
-        // Windows: there is no `/proc` (port open, `unsupported-on-windows{process-list}`). The trait answers only yes or no, so
-        // the safe answer is "running": an update or removal is then refused instead of replacing files of a running program.
-        #[cfg(not(unix))]
-        {
-            let _ = name;
-            return true;
-        }
-        #[cfg(unix)]
         self.scan(name)
+    }
+
+    /// Windows: there is no `/proc` (port open, `unsupported-on-windows{process-list}`). The trait answers only yes or no, so
+    /// the safe answer is "running": an update or removal is then refused instead of replacing files of a running program.
+    #[cfg(not(unix))]
+    fn is_running(&self, _name: &str) -> bool {
+        true
     }
 }
 

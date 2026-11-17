@@ -57,6 +57,7 @@ async fn socket_owner(socket: &Path) -> io::Result<Option<u32>> {
 }
 
 #[cfg(not(unix))]
+#[allow(clippy::unused_async)] // same signature as the Unix one; Windows port open
 async fn socket_owner(_socket: &Path) -> io::Result<Option<u32>> {
     Err(io::Error::new(io::ErrorKind::Unsupported, "win-port"))
 }

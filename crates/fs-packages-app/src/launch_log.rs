@@ -4,7 +4,9 @@
 //! `~/.local/state`. One file per program, wiped at each start, 0600 in a folder of 0700; never longer than [`LOG_MAX`] bytes (the end stays).
 //! The name of the program is the only part that comes from outside, so it is reduced to `[a-z0-9-]` before it is part of a path.
 
-use std::fs::{self, File, OpenOptions};
+use std::fs::File;
+#[cfg(unix)]
+use std::fs::{self, OpenOptions};
 use std::io::{self, Read, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 
@@ -61,29 +63,41 @@ pub fn log_file(dir: &Path, command: &str) -> PathBuf {
 ///
 /// # Errors
 /// The cause when the folder cannot be made or closed, or is a symbolic link or not a folder.
+#[cfg(unix)]
 pub fn create_private_dir(dir: &Path) -> io::Result<()> {
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::{DirBuilderExt, PermissionsExt};
-        fs::DirBuilder::new()
-            .recursive(true)
-            .mode(0o700)
-            .create(dir)?;
-        check_real_dir(dir)?;
-        let mode = fs::metadata(dir)?.permissions().mode();
-        if mode & 0o077 != 0 {
-            fs::set_permissions(dir, fs::Permissions::from_mode(0o700))?;
-        }
-        Ok(())
+    use std::os::unix::fs::{DirBuilderExt, PermissionsExt};
+    fs::DirBuilder::new()
+        .recursive(true)
+        .mode(0o700)
+        .create(dir)?;
+    check_real_dir(dir)?;
+    let mode = fs::metadata(dir)?.permissions().mode();
+    if mode & 0o077 != 0 {
+        fs::set_permissions(dir, fs::Permissions::from_mode(0o700))?;
     }
-    #[cfg(not(unix))]
-    {
-        fs::create_dir_all(dir)?;
-        check_real_dir(dir)
-    }
+    Ok(())
+}
+
+/// Windows: private folders are not ported (port open): nothing is made, the error is `unsupported-on-windows{private-dir}`.
+///
+/// # Errors
+/// Always.
+#[cfg(not(unix))]
+pub fn create_private_dir(_dir: &Path) -> io::Result<()> {
+    Err(unsupported("private-dir"))
+}
+
+/// The open error of what is not ported to Windows: kind `Unsupported`, text `unsupported-on-windows{<feature>}` (code and parameter).
+#[cfg(not(unix))]
+fn unsupported(feature: &str) -> io::Error {
+    io::Error::new(
+        io::ErrorKind::Unsupported,
+        format!("unsupported-on-windows{{{feature}}}"),
+    )
 }
 
 /// `dir` is a real folder: not a symbolic link, not something else.
+#[cfg(unix)]
 fn check_real_dir(dir: &Path) -> io::Result<()> {
     let kind = fs::symlink_metadata(dir)?.file_type();
     if kind.is_symlink() {
@@ -106,36 +120,50 @@ fn check_real_dir(dir: &Path) -> io::Result<()> {
 ///
 /// # Errors
 /// The cause when the file cannot be made or wiped, or the path is a symbolic link.
+#[cfg(unix)]
 pub fn open_fresh(path: &Path) -> io::Result<File> {
-    let mut options = OpenOptions::new();
-    options.write(true).create(true).truncate(true);
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::OpenOptionsExt;
-        options.mode(0o600).custom_flags(libc::O_NOFOLLOW);
-    }
-    let file = options.open(path)?;
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        file.set_permissions(fs::Permissions::from_mode(0o600))?;
-    }
+    use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
+    let file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .mode(0o600)
+        .custom_flags(libc::O_NOFOLLOW)
+        .open(path)?;
+    file.set_permissions(fs::Permissions::from_mode(0o600))?;
     Ok(file)
+}
+
+/// Windows: no log is made (`unsupported-on-windows{private-file}`), never an unprotected one that could follow a link.
+///
+/// # Errors
+/// Always.
+#[cfg(not(unix))]
+pub fn open_fresh(_path: &Path) -> io::Result<File> {
+    Err(unsupported("private-file"))
 }
 
 /// Opens the existing log for the log pump (read and write, never following a symbolic link, nothing is made or wiped).
 ///
 /// # Errors
 /// The cause when the file is not there, or is a symbolic link.
+#[cfg(unix)]
 pub fn open_existing(path: &Path) -> io::Result<File> {
-    let mut options = OpenOptions::new();
-    options.read(true).write(true);
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::OpenOptionsExt;
-        options.custom_flags(libc::O_NOFOLLOW);
-    }
-    options.open(path)
+    use std::os::unix::fs::OpenOptionsExt;
+    OpenOptions::new()
+        .read(true)
+        .write(true)
+        .custom_flags(libc::O_NOFOLLOW)
+        .open(path)
+}
+
+/// Windows: nothing is opened (`unsupported-on-windows{private-file}`): the refusal to follow a link cannot be made here yet.
+///
+/// # Errors
+/// Always.
+#[cfg(not(unix))]
+pub fn open_existing(_path: &Path) -> io::Result<File> {
+    Err(unsupported("private-file"))
 }
 
 /// The last `count` lines of the log, each without control characters and cut to a sane length; empty lines are left out.
@@ -171,4 +199,25 @@ fn clean(line: &str) -> String {
         .filter(|c| !c.is_control())
         .take(LINE_MAX)
         .collect()
+}
+
+#[cfg(all(test, windows))]
+mod tests {
+    use super::*;
+
+    fn open(e: &io::Error, feature: &str) -> bool {
+        e.kind() == io::ErrorKind::Unsupported
+            && e.to_string() == format!("unsupported-on-windows{{{feature}}}")
+    }
+
+    #[test]
+    fn no_log_folder_or_file_is_made_on_windows() {
+        let dir = std::env::temp_dir().join(format!("fs-log-win-{}", std::process::id()));
+        assert!(open(&create_private_dir(&dir).unwrap_err(), "private-dir"));
+        assert!(!dir.exists());
+        let file = std::env::temp_dir().join(format!("fs-log-win-{}.log", std::process::id()));
+        assert!(open(&open_fresh(&file).unwrap_err(), "private-file"));
+        assert!(open(&open_existing(&file).unwrap_err(), "private-file"));
+        assert!(!file.exists());
+    }
 }

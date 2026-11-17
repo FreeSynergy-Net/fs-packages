@@ -29,6 +29,7 @@ pub fn generate_keys(
     let threshold = NonZeroU64::new(threshold)
         .filter(|t| t.get() <= root_keys as u64)
         .ok_or_else(|| PublishError("threshold must be 1..=number of root keys".to_owned()))?;
+    private_files_possible("private-dir")?;
     std::fs::create_dir_all(dir).map_err(fail("create dir"))?;
     let rng = SystemRandom::new();
     let mut names: Vec<String> = (1..=root_keys).map(|i| format!("root-{i}")).collect();
@@ -107,17 +108,47 @@ pub fn generate_keys(
     })?
 }
 
+/// Windows: private files are not ported (port open), so no key is written: the error is a code and a parameter, nothing is
+/// created unprotected. Unix: always fine.
+///
+/// # Errors
+/// On Windows always `unsupported-on-windows{<feature>}`.
+#[allow(clippy::unnecessary_wraps)] // the error exists on Windows only
+fn private_files_possible(feature: &str) -> Result<(), PublishError> {
+    if cfg!(unix) {
+        Ok(())
+    } else {
+        Err(PublishError(format!("unsupported-on-windows{{{feature}}}")))
+    }
+}
+
 /// Writes a private key readable by the owner only.
+#[cfg(unix)]
 fn write_secret(path: &Path, bytes: &[u8]) -> Result<(), PublishError> {
     use std::io::Write;
-    #[cfg(unix)]
     use std::os::unix::fs::OpenOptionsExt;
     let mut options = std::fs::OpenOptions::new();
     options.write(true).create(true).truncate(true);
-    #[cfg(unix)]
     options.mode(0o600);
     options
         .open(path)
         .and_then(|mut f| f.write_all(bytes))
         .map_err(fail("write key"))
+}
+
+/// Windows: no key is written (`unsupported-on-windows{private-file}`), never with plain options.
+#[cfg(not(unix))]
+fn write_secret(_path: &Path, _bytes: &[u8]) -> Result<(), PublishError> {
+    private_files_possible("private-file")
+}
+
+#[cfg(all(test, windows))]
+mod tests {
+    #[test]
+    fn no_key_is_written_on_windows() {
+        let dir = std::env::temp_dir().join(format!("fs-keys-win-{}", std::process::id()));
+        let e = super::generate_keys(&dir, 1, 1, std::time::Duration::from_secs(60)).unwrap_err();
+        assert_eq!(e.0, "unsupported-on-windows{private-dir}");
+        assert!(!dir.exists());
+    }
 }

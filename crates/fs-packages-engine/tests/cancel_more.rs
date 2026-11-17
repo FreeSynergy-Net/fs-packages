@@ -1,3 +1,4 @@
+#![cfg(unix)] // symbolic links: Windows port open
 #![allow(clippy::assert_is_empty)] // test data
 //! "Cancel" right before the rename, and one install of a package at a time across processes. Each with a counter-proof.
 

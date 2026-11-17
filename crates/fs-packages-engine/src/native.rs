@@ -45,3 +45,38 @@ pub(crate) fn names(paths: &[PathBuf]) -> Vec<String> {
         .map(|f| f.to_string_lossy().into_owned())
         .collect()
 }
+
+#[cfg(all(test, unix))]
+mod tests {
+    use std::os::unix::fs::PermissionsExt;
+
+    use super::*;
+
+    #[test]
+    fn the_folder_is_0700_and_the_files_are_0600() {
+        let tmp = tempfile::tempdir().unwrap();
+        let dir = tmp.path().join("stage");
+        fs::create_dir(&dir).unwrap();
+        fs::set_permissions(&dir, fs::Permissions::from_mode(0o755)).unwrap();
+        let (paths, result) = write_private(&dir, "p", "rpm", &[vec![1], vec![2]]);
+        assert_eq!(result, Ok(()));
+        assert_eq!(paths.len(), 2);
+        let mode = |p: &Path| fs::metadata(p).unwrap().permissions().mode() & 0o777;
+        assert_eq!(mode(&dir), 0o700);
+        assert!(paths.iter().all(|p| mode(p) == 0o600));
+    }
+
+    #[test]
+    fn a_link_at_the_path_is_not_followed() {
+        let tmp = tempfile::tempdir().unwrap();
+        let (paths, _) = write_private(tmp.path(), "p", "rpm", &[vec![1]]);
+        let foreign = tmp.path().join("foreign");
+        fs::write(&foreign, b"keep").unwrap();
+        let _ = fs::remove_file(&paths[0]);
+        std::os::unix::fs::symlink(&foreign, &paths[0]).unwrap();
+        // The next write removes the link first and creates a new file: the foreign file stays as it is.
+        let (_, result) = write_private(tmp.path(), "p", "rpm", &[vec![9]]);
+        assert_eq!(result, Ok(()));
+        assert_eq!(fs::read(&foreign).unwrap(), b"keep");
+    }
+}

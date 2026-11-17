@@ -71,6 +71,7 @@ pub fn find_servers(name: &str, ignore: u32) -> Vec<Server> {
         .collect()
 }
 
+/// Windows: no process scan yet (port open), so no server is found.
 #[cfg(not(unix))]
 #[must_use]
 pub fn find_servers(_name: &str, _ignore: u32) -> Vec<Server> {
