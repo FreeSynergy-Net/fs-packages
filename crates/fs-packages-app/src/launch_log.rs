@@ -5,7 +5,7 @@
 //! The name of the program is the only part that comes from outside, so it is reduced to `[a-z0-9-]` before it is part of a path.
 
 use std::fs::{self, File, OpenOptions};
-use std::io::{self, Read, Seek, SeekFrom, Write};
+use std::io::{self, Read, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 
 /// The most bytes a log keeps; a longer one loses its beginning.
@@ -55,10 +55,12 @@ pub fn log_file(dir: &Path, command: &str) -> PathBuf {
     dir.join(format!("launch-{}.log", log_name(command)))
 }
 
-/// Makes `dir` (and what is missing above it) with mode 0700, never wider; a folder that exists and is open for others is closed.
+/// Makes `dir` (and what is missing above it) with mode 0700, never wider; a folder that exists and is open for others is closed. The
+/// folder itself must not be a symbolic link (checked with `symlink_metadata`, before anything is changed on it): a link there could point
+/// the log, and the closing of the rights, at a place that is not ours.
 ///
 /// # Errors
-/// The cause when the folder cannot be made or closed.
+/// The cause when the folder cannot be made or closed, or is a symbolic link or not a folder.
 pub fn create_private_dir(dir: &Path) -> io::Result<()> {
     #[cfg(unix)]
     {
@@ -67,6 +69,7 @@ pub fn create_private_dir(dir: &Path) -> io::Result<()> {
             .recursive(true)
             .mode(0o700)
             .create(dir)?;
+        check_real_dir(dir)?;
         let mode = fs::metadata(dir)?.permissions().mode();
         if mode & 0o077 != 0 {
             fs::set_permissions(dir, fs::Permissions::from_mode(0o700))?;
@@ -75,22 +78,41 @@ pub fn create_private_dir(dir: &Path) -> io::Result<()> {
     }
     #[cfg(not(unix))]
     {
-        fs::create_dir_all(dir)
+        fs::create_dir_all(dir)?;
+        check_real_dir(dir)
     }
 }
 
-/// Opens the log of a new start: made 0600 (an old file is set to 0600 as well), wiped, and for appending, so that a trim of the file
-/// never leaves a hole behind the writing program.
+/// `dir` is a real folder: not a symbolic link, not something else.
+fn check_real_dir(dir: &Path) -> io::Result<()> {
+    let kind = fs::symlink_metadata(dir)?.file_type();
+    if kind.is_symlink() {
+        Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "the log folder is a symbolic link",
+        ))
+    } else if !kind.is_dir() {
+        Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "the log folder is not a folder",
+        ))
+    } else {
+        Ok(())
+    }
+}
+
+/// Opens the log of a new start: made 0600 (an old file is set to 0600 as well) and wiped. A symbolic link at the path is never followed
+/// (`O_NOFOLLOW`): the open fails instead of wiping a file somewhere else.
 ///
 /// # Errors
-/// The cause when the file cannot be made or wiped.
+/// The cause when the file cannot be made or wiped, or the path is a symbolic link.
 pub fn open_fresh(path: &Path) -> io::Result<File> {
     let mut options = OpenOptions::new();
-    options.append(true).create(true);
+    options.write(true).create(true).truncate(true);
     #[cfg(unix)]
     {
         use std::os::unix::fs::OpenOptionsExt;
-        options.mode(0o600);
+        options.mode(0o600).custom_flags(libc::O_NOFOLLOW);
     }
     let file = options.open(path)?;
     #[cfg(unix)]
@@ -98,27 +120,22 @@ pub fn open_fresh(path: &Path) -> io::Result<File> {
         use std::os::unix::fs::PermissionsExt;
         file.set_permissions(fs::Permissions::from_mode(0o600))?;
     }
-    file.set_len(0)?;
     Ok(file)
 }
 
-/// Keeps only the last [`LOG_MAX`] bytes of the file; a shorter file stays as it is.
+/// Opens the existing log for the log pump (read and write, never following a symbolic link, nothing is made or wiped).
 ///
 /// # Errors
-/// The cause when the file cannot be read or rewritten.
-pub fn trim(path: &Path) -> io::Result<()> {
-    let len = fs::metadata(path)?.len();
-    let max = LOG_MAX as u64;
-    if len <= max {
-        return Ok(());
+/// The cause when the file is not there, or is a symbolic link.
+pub fn open_existing(path: &Path) -> io::Result<File> {
+    let mut options = OpenOptions::new();
+    options.read(true).write(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        options.custom_flags(libc::O_NOFOLLOW);
     }
-    let mut file = OpenOptions::new().read(true).write(true).open(path)?;
-    file.seek(SeekFrom::Start(len - max))?;
-    let mut tail = Vec::with_capacity(LOG_MAX);
-    file.read_to_end(&mut tail)?;
-    file.seek(SeekFrom::Start(0))?;
-    file.write_all(&tail)?;
-    file.set_len(tail.len() as u64)
+    options.open(path)
 }
 
 /// The last `count` lines of the log, each without control characters and cut to a sane length; empty lines are left out.

@@ -21,3 +21,7 @@ fs-components-styles = { git = "https://github.com/FreeSynergy/fs-components", t
 fs-components-widgets = { git = "https://github.com/FreeSynergy/fs-components", tag = "v0.0.26" }
 fs-components-primitives = { git = "https://github.com/FreeSynergy/fs-components", tag = "v0.0.26" }
 fs-interfaces = { git = "https://github.com/FreeSynergy/fs-interfaces", tag = "v0.0.22", features = ["rpc"] }
+
+[target.'cfg(unix)'.dependencies]
+# O_NOFOLLOW for the log of a started program (already in the lock through other crates).
+libc = "0.2"

@@ -1,5 +1,7 @@
-//! The launcher against stub programs: a start that fails right away is reported with the end of its log; a program that runs on, or
-//! ends late, is not; the log is private (0600 in 0700), wiped at each start, never longer than 64 KB; the name in the path is reduced.
+//! The launcher against stub programs: a start that fails right away is reported with the end of its log; one that ends at once without
+//! a failure is reported as a hint; one that runs on, or ends late, is not; the log is private (0600 in 0700), wiped at each start; the
+//! name in the path is reduced. (The 64 KB limit and the log pump itself are tested in `launch_pump.rs` and in the tests of the
+//! `fs-packages` crate; here the pump is a stub that copies its input.)
 //!
 //! Pattern: Integration test with stub scripts in a folder of the test target (never /tmp); one mutex and `sync_all` (a script that is
 //! still open for writing cannot be executed: ETXTBSY).
@@ -13,7 +15,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
-use fs_packages_app::launch_log::{LOG_MAX, log_file, log_name, trim};
+use fs_packages_app::launch_log::{log_file, log_name};
 use fs_packages_app::launch_watch::LaunchReport;
 use fs_packages_app::launcher::{Launcher, ProcessLauncher};
 
@@ -33,7 +35,10 @@ fn stage(name: &str) -> Stage {
     let dir = Path::new(env!("CARGO_TARGET_TMPDIR")).join(format!("launch-{name}"));
     let _ = fs::remove_dir_all(&dir);
     fs::create_dir_all(dir.join("bin")).unwrap();
-    Stage { dir }
+    let stage = Stage { dir };
+    // The stand-in for the log pump: `<pump> log-pump <log>` copies its input into the log.
+    stage.stub("log-pump-stub", "exec cat >> \"$2\"");
+    stage
 }
 
 impl Stage {
@@ -52,6 +57,8 @@ impl Stage {
     }
     fn launcher(&self, observe: Duration) -> ProcessLauncher {
         ProcessLauncher::new(self.dir.join("bin"))
+            .with_pump(self.dir.join("bin").join("log-pump-stub"))
+            .with_probe(std::sync::Arc::new(|_| Some(true)))
             .with_state_dir(self.state())
             .with_observe(observe)
     }
@@ -137,13 +144,29 @@ fn a_failure_after_the_observation_time_is_not_reported() {
 }
 
 #[test]
-fn an_early_clean_end_is_not_reported() {
+fn an_early_clean_end_is_reported_as_a_hint_with_its_lines() {
     let _g = guard();
     let s = stage("clean");
     s.stub("fs-stub-clean", "echo done >&2\nexit 0");
     let l = s.launcher(Duration::from_secs(3));
     l.start("fs-stub-clean").unwrap();
-    std::thread::sleep(Duration::from_millis(800));
+    let reports = wait_report(&l);
+    let [LaunchReport::EndedAtOnce { command, lines }] = reports.as_slice() else {
+        panic!("one hint expected, got {reports:?}");
+    };
+    assert_eq!(command, "fs-stub-clean");
+    assert_eq!(lines, &["done"]);
+    assert_eq!(reports[0].code(), "launch-ended-at-once");
+}
+
+#[test]
+fn a_clean_end_after_the_observation_time_is_not_reported() {
+    let _g = guard();
+    let s = stage("clean-late");
+    s.stub("fs-stub-clean-late", "sleep 1\nexit 0");
+    let l = s.launcher(Duration::from_millis(300));
+    l.start("fs-stub-clean-late").unwrap();
+    std::thread::sleep(Duration::from_millis(2500));
     assert!(l.take_reports().is_empty());
 }
 
@@ -167,26 +190,6 @@ fn the_log_is_private_even_when_folder_and_file_were_open() {
     assert_eq!(mode(&log), 0o600);
     assert_eq!(l.log_path("fs-stub-fail"), Some(log));
     assert_eq!(l.log_path("fs-stub-other"), None);
-}
-
-#[test]
-fn a_long_log_keeps_its_end_within_64_kb() {
-    let _g = guard();
-    let s = stage("big");
-    s.stub(
-        "fs-stub-big",
-        "head -c 200000 /dev/zero | tr '\\000' x >&2\necho >&2\necho tail-end >&2\nexit 4",
-    );
-    let l = s.launcher(Duration::from_secs(5));
-    l.start("fs-stub-big").unwrap();
-    let reports = wait_report(&l);
-    let log = log_file(&s.state(), "fs-stub-big");
-    let size = fs::metadata(&log).unwrap().len();
-    assert!(size <= LOG_MAX as u64, "log is {size} bytes");
-    assert!(size > 1000, "the end stays");
-    assert!(
-        matches!(&reports[0], LaunchReport::Failed { lines, .. } if lines.last().is_some_and(|l| l == "tail-end"))
-    );
 }
 
 #[test]
@@ -245,18 +248,4 @@ fn a_log_that_cannot_be_written_is_told_with_its_cause_and_the_program_starts() 
         std::thread::sleep(Duration::from_millis(50));
     }
     assert!(mark.exists(), "the program was started anyway");
-}
-
-#[test]
-fn trim_keeps_the_end_and_leaves_a_short_file_alone() {
-    let s = stage("trim");
-    let path = s.dir.join("t.log");
-    let long: Vec<u8> = (0..100_000u32)
-        .map(|i| b'a' + u8::try_from(i % 26).unwrap())
-        .collect();
-    fs::write(&path, &long).unwrap();
-    trim(&path).unwrap();
-    assert_eq!(fs::read(&path).unwrap(), long[long.len() - LOG_MAX..]);
-    trim(&path).unwrap();
-    assert_eq!(fs::metadata(&path).unwrap().len(), LOG_MAX as u64);
 }

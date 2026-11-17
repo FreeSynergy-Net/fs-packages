@@ -56,7 +56,8 @@ fn the_storefront_build_computes_the_cards_once() {
     let shared = Arc::new(Mutex::new(model(&f)));
     let launcher: Arc<dyn Launcher> = Arc::new(NoLauncher);
     let app = store_app(&shared, &launcher).unwrap();
-    let path = std::path::PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join(format!("fs-packages-cache-{}.png", std::process::id()));
+    let path = std::path::PathBuf::from(env!("CARGO_TARGET_TMPDIR"))
+        .join(format!("fs-packages-cache-{}.png", std::process::id()));
     let before = shared.lock().unwrap().cards_computed();
     app.picture(900, 640, &path).unwrap();
     let _ = std::fs::remove_file(&path);
