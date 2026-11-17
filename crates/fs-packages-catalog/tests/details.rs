@@ -1,7 +1,7 @@
 //! Tests of the package details read from the catalog (ADR 0068).
 
 /// The test data names its artifacts `x86_64-linux-gnu`; the catalog offers only the system it runs on, so the data is read
-/// for the architecture and system of this run (on Linux x86_64 nothing changes).
+/// for the architecture and system of this run (on Linux `x86_64` nothing changes).
 fn parse_catalog(
     xml: &str,
 ) -> Result<fs_packages_catalog::Catalog, fs_packages_catalog::CatalogError> {
