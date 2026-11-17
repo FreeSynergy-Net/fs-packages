@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.0.19
 
 ### English
 - **Catalog fetch is serialised and no longer starts from a deleted folder (P0, user finding: installs failed with "shallow file could not be locked" / "source could not be read").** Before, every install job and every list read cloned the catalog into the same folder `sources/work` after deleting it, with no lock. Now a read takes a lock (a mutex for the threads, `flock` on `<root>/sources/.lock` for other processes; on Windows the same through `File::lock`, so no gap), clones into a folder of its own below `sources/` (never `/tmp`), and only when the clone is whole renames it to the place of that source (`sources/work-<hash of the address>`); the old state is removed after that, so a failed or aborted fetch leaves the old state. Left-over folders of a killed read (own name patterns only, older than 15 minutes) are removed. Window and commands read the folder inside the lock.
