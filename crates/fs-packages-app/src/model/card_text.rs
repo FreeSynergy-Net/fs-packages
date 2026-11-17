@@ -1,8 +1,42 @@
 //! Pattern: none (the words under a card: the state badge and the line with date and size).
 
 use super::cards::{Card, CardState};
+use crate::words;
+
+impl super::store::StoreModel {
+    /// `name` is installed, every source was read and none offers it. False while a source could not be read, or when nothing is offered.
+    pub(super) fn offer_is_gone(&self, name: &str) -> bool {
+        self.installed.iter().any(|r| r.name == name)
+            && !self.available.iter().any(|r| r.package.name == name)
+            && !self.offers.is_empty()
+            && !self
+                .problems
+                .iter()
+                .any(|p| matches!(p, super::types::Problem::Unreadable { .. }))
+    }
+}
 
 impl Card {
+    /// Text of the description panel: the description, or a sentence saying there is none.
+    #[must_use]
+    pub fn description_text(&self) -> String {
+        if self.no_longer_offered {
+            let hint = fs_packages_core::progress_words::no_longer_offered(
+                fs_packages_core::progress_words::german(),
+            );
+            return if self.description.trim().is_empty() {
+                hint.to_owned()
+            } else {
+                format!("{hint}. {}", self.description.trim())
+            };
+        }
+        if self.description.trim().is_empty() {
+            words::NO_DESCRIPTION.to_owned()
+        } else {
+            self.description.trim().to_owned()
+        }
+    }
+
     /// The state in words, for the badge on the card.
     #[must_use]
     pub fn state_word(&self) -> &'static str {
@@ -42,6 +76,13 @@ impl Card {
     /// The line `0.7.0 - 2026-11-09 - 13 MiB`, with `unknown` where the catalog is silent.
     #[must_use]
     pub fn meta_line(&self) -> String {
+        if self.no_longer_offered {
+            // nothing is known about date and size any more: say what is true
+            return fs_packages_core::progress_words::no_longer_offered(
+                fs_packages_core::progress_words::german(),
+            )
+            .to_owned();
+        }
         let date = if self.released.is_empty() {
             crate::words_front::UNKNOWN
         } else {
@@ -58,34 +99,42 @@ impl Card {
         let super::cards::Working::Job(_, phase) = self.working? else {
             return None;
         };
+        let de = fs_packages_core::progress_words::german();
         if phase == Phase::Pending
             && let Some(bytes) = self.bytes
         {
             let line = match bytes.total {
-                Some(total) => format!(
-                    "Downloading {} of {}{}",
-                    super::front_text::size_text(bytes.done),
-                    super::front_text::size_text(total),
-                    bytes.share().map_or_else(String::new, |s| format!(
-                        " \u{b7} {} %",
-                        (s * 100.0).round()
-                    ))
+                Some(total) => crate::words_msg::download_of(
+                    de,
+                    &super::front_text::size_text(bytes.done),
+                    &super::front_text::size_text(total),
+                    bytes.share().map(|s| (s * 100.0).round()),
                 ),
-                None => format!("Downloading {}", super::front_text::size_text(bytes.done)),
+                None => {
+                    crate::words_msg::download_so_far(de, &super::front_text::size_text(bytes.done))
+                }
             };
             return Some((bytes.share().unwrap_or(0.1), line));
         }
         let (share, line) = match phase {
-            Phase::Pending => (0.1, "Waiting for the download and the checks"),
-            Phase::Verified => (
-                0.45,
-                "Checksum and signature are good; waiting for the others",
+            // Before the first byte: the catalog is fetched (and the size of the file is known from it), so say so.
+            Phase::Pending => (
+                0.1,
+                fs_packages_core::progress_words::catalog_fetching(de).to_owned(),
             ),
-            Phase::Installing => (0.8, "Installing"),
-            Phase::Installed => (1.0, "Installed"),
-            Phase::Failed | Phase::RolledBack => (1.0, "Something went wrong; going back"),
+            Phase::Verified => (0.45, crate::words_msg::verified_waiting(de).to_owned()),
+            Phase::Installing => (
+                0.8,
+                if self.asks_password {
+                    fs_packages_core::progress_words::installing_password(de).to_owned()
+                } else {
+                    crate::words_msg::installing(de).to_owned()
+                },
+            ),
+            Phase::Installed => (1.0, crate::words_msg::installed(de).to_owned()),
+            Phase::Failed | Phase::RolledBack => (1.0, crate::words_msg::going_back(de).to_owned()),
         };
-        Some((share, line.to_owned()))
+        Some((share, line))
     }
 }
 

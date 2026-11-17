@@ -20,7 +20,7 @@ follows at the next start.
 
 ### Reload, messages, install question, navigation (0.0.16)
 
-- **Reload** is the round-arrow button (`view-refresh`, tooltip "Reload catalog" / "Katalog neu laden") at the right of the top bar. A source that cannot be read is told in a message and what was shown stays.
+- **Reload** is the round-arrow button (`view-refresh`, tooltip "Reload catalog" / "Katalog neu laden") at the right of the top bar. A source that cannot be read is told in a message and what was shown stays. The reload button fetches the catalogs again; otherwise a fetched catalog is reused for 10 minutes, and only one fetch runs at a time (lock `sources/.lock`). Windows: the lock is `File::lock` of the standard library, the same as elsewhere.
 - **Messages** at the top go away by themselves (a hint after 6 s, an error after 20 s), each has a close button; menu **Packages > Messages** (German: **Meldungen**) lists every message of the session.
 - **Install** is one click on "Install", then the question (what is added, size, source, rights), then **Install now**. Nothing asks again; for a system install (rpm/deb) the question says that the system asks for your password next.
 - **Start** is the overview (updates, new, not-supported entries) and has no number. **Programs**, **Frontends**, **Components**, **Themes**, ... list ALL packages of their kind; the number is what the list shows.

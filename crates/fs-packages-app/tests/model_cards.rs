@@ -97,9 +97,9 @@ fn installed_but_not_offered_is_still_a_card() {
     let card = m.cards().into_iter().find(|c| c.name == "fs-local-only");
     let card = card.unwrap();
     assert_eq!(card.state, CardState::Installed);
-    assert_eq!(
-        card.description_text(),
-        fs_packages_app::words::NO_DESCRIPTION
+    assert!(
+        card.no_longer_offered,
+        "said in the description instead of 'no description'"
     );
 }
 

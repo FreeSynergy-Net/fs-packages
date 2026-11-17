@@ -38,6 +38,8 @@ pub struct StoreModel {
     /// A face asked for on the command line (`--variant`): it wins over the saved one, and is never saved.
     pub(super) face_override: Option<fs_packages_sources::Face>,
     pub(super) findings: Findings,
+    /// Unix seconds of the last whole catalog read of this window (0 = none yet); the footer's "Checked" also says it.
+    pub(super) catalog_read: u64,
     pub(super) check: CheckState,
     pub(super) shown: Option<View>,
     pub(super) fresh: Vec<String>,
@@ -71,6 +73,7 @@ impl StoreModel {
             },
             face_override: None,
             findings: Findings::default(),
+            catalog_read: 0,
             check: CheckState::Idle,
             shown: None,
             fresh: Vec::new(),
@@ -190,10 +193,17 @@ impl StoreModel {
             return;
         }
         self.apply_sources(fetched.sources);
+        let whole = fetched
+            .listing
+            .as_ref()
+            .is_ok_and(|l| l.unreadable.is_empty());
         self.apply_listing(fetched.listing);
         self.apply_installed(fetched.installed);
         self.merge();
         self.load_updates();
+        if whole {
+            self.note_catalog_read(fetched.read_at);
+        }
     }
 
     fn apply_sources(&mut self, result: Result<Vec<SourceRow>, BackendError>) {

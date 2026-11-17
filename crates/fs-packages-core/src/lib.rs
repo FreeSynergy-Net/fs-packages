@@ -8,6 +8,7 @@ pub mod details;
 pub mod language;
 pub mod names;
 pub mod package;
+pub mod progress_words;
 pub mod signature;
 pub mod source;
 pub mod state;

@@ -15,10 +15,12 @@
 
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::OnceLock;
 
 use fs_packages_catalog::{Catalog, parse_catalog};
 use fs_packages_core::{SignaturePolicy, SignatureVerifier, SourceRepository, Version};
-use fs_packages_engine::net::{HttpsFetch, clone_catalog};
+use fs_packages_engine::CatalogCache;
+use fs_packages_engine::net::HttpsFetch;
 use fs_packages_engine::service::{Fetch, FileFetch};
 use fs_packages_pgp::PgpVerifier;
 use fs_packages_sources::FileSources;
@@ -83,17 +85,48 @@ pub(crate) fn addresses(root: &Path, arg: Option<&String>) -> Result<Vec<String>
     }
 }
 
-/// Clones one source and returns its catalog text and signature.
+/// The catalogs this process fetched already: a batch of installs fetches each source once (not once per package).
+fn fetched() -> &'static CatalogCache<(Vec<u8>, Vec<u8>)> {
+    static CACHE: OnceLock<CatalogCache<(Vec<u8>, Vec<u8>)>> = OnceLock::new();
+    CACHE.get_or_init(CatalogCache::default)
+}
+
+/// Clones one source (once per process and source, one clone at a time with other processes) and returns its catalog text and signature.
 pub(crate) fn fetch_source(
     root: &Path,
     url: &str,
     verifier: &PgpVerifier,
     policy: &SignaturePolicy,
 ) -> Result<(Vec<u8>, Vec<u8>), String> {
-    let work = root.join("sources").join("work");
-    let _ = fs::remove_dir_all(&work);
-    fs::create_dir_all(work.parent().unwrap_or(root)).map_err(|e| e.to_string())?;
-    clone_catalog(url, &work).map_err(|e| format!("{url}: {e}"))?;
+    let got = fetched().get_or_fetch(url, || {
+        eprintln!(
+            "{} {url}",
+            fs_packages_core::progress_words::catalog_fetching(
+                fs_packages_core::progress_words::german()
+            )
+        );
+        fs_packages_engine::with_clone(root, url, |work| {
+            read_clone(root, work, url, verifier, policy)
+        })
+        .map_err(|e| {
+            if e.starts_with(url) {
+                e
+            } else {
+                format!("{url}: {e}")
+            }
+        })
+    })?;
+    Ok((got.0.clone(), got.1.clone()))
+}
+
+/// What is read from the fresh clone `work`; inside the lock of the store.
+fn read_clone(
+    root: &Path,
+    work: &Path,
+    url: &str,
+    verifier: &PgpVerifier,
+    policy: &SignaturePolicy,
+) -> Result<(Vec<u8>, Vec<u8>), String> {
     let catalog = fs::read(work.join("catalog.xml")).map_err(|e| format!("{url}: {e}"))?;
     let sig = fs::read(work.join("catalog.xml.asc")).map_err(|e| format!("{url}: {e}"))?;
     // Nothing of an unsigned or wrongly signed catalog is shown or believed.
@@ -102,7 +135,7 @@ pub(crate) fn fetch_source(
             "{url}: the catalog signature is not valid for a trusted key"
         ));
     }
-    crate::tuf::tuf_check(&work, url, &catalog)?;
+    crate::tuf::tuf_check(work, url, &catalog)?;
     let parsed = read_catalog(&catalog)?;
     fs_packages_sources::ensure_fresh(
         &root.join("serials.toml"),

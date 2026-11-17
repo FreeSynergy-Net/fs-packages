@@ -8,7 +8,7 @@ use std::path::Path;
 
 use fs_packages_catalog::parse_catalog;
 use fs_packages_core::{SignaturePolicy, SignatureVerifier, Source};
-use fs_packages_engine::net::clone_catalog;
+use fs_packages_engine::with_clone;
 use fs_packages_pgp::PgpVerifier;
 
 use crate::view::{Offers, PackageInfo, SkippedInfo};
@@ -40,13 +40,9 @@ fn read_one(
     verifier: &PgpVerifier,
     policy: &SignaturePolicy,
 ) -> Result<Offers, String> {
-    let work = root
-        .join("sources")
-        .join(format!("serve-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&work);
-    std::fs::create_dir_all(work.parent().unwrap_or(root)).map_err(|e| e.to_string())?;
-    let read = fetch(&work, &source.url, verifier, policy);
-    let _ = std::fs::remove_dir_all(&work);
+    let read = with_clone(root, &source.url, |work| {
+        fetch(work, &source.url, verifier, policy)
+    });
     let catalog = parse_catalog(&read?).map_err(|e| e.0)?;
     fs_packages_sources::ensure_fresh(
         &root.join("serials.toml"),
@@ -90,7 +86,6 @@ fn fetch(
     verifier: &PgpVerifier,
     policy: &SignaturePolicy,
 ) -> Result<String, String> {
-    clone_catalog(url, work).map_err(|e| format!("{url}: {e}"))?;
     let catalog = std::fs::read(work.join("catalog.xml")).map_err(|e| format!("{url}: {e}"))?;
     let sig = std::fs::read(work.join("catalog.xml.asc")).map_err(|e| format!("{url}: {e}"))?;
     if !policy.is_satisfied_by(&verifier.verify(&catalog, Some(&sig))) {

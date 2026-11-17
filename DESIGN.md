@@ -506,3 +506,6 @@ Craft style and the theme adapter (`fs_components_render::use_style`) come from 
 - **Not used yet:** the new blocks (license dialog, confirm dialog, toast, switch, segmented) wait for the software pilot, stage 3.
 - **Only visible effect:** Craft uses the system mono font when JetBrains Mono is not installed (fs-components 0.0.23, 16b: mono list); text about 1 px lower, layout and colours the same.
 - **CI:** fs-release pinned to v0.0.9 (`6ebd3f8`) in `check.yml`, `release.yml` and `typing-test.yml`.
+
+## Catalog fetch (P0)
+`fs_packages_engine::with_clone` is the one way to read a source: lock (thread mutex + `flock` on `<root>/sources/.lock`), clone into `sources/.clone-tmp-<pid>-<time>-<n>`, atomic rename to `sources/work-<hash>` (old state removed afterwards, so an abort keeps it), read inside the lock. `CatalogCache` keeps the verified catalog in memory (10 minutes; the CLI per process, the window per session; the refresh button forgets). Named limits: the lock is advisory (a program that ignores it is not stopped); a killed read leaves a folder until the next read sweeps it after 15 minutes.

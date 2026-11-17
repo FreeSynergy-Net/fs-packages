@@ -4,7 +4,6 @@
 use fs_packages_core::{Kind, Version};
 
 use crate::backend::{JobKind, Phase};
-use crate::words;
 
 use super::store::StoreModel;
 use super::types::Action;
@@ -108,6 +107,11 @@ pub struct Card {
     pub bytes: Option<fs_packages_core::Progress>,
     /// "Cancel" can stop the running job now.
     pub can_cancel: bool,
+    /// Installed, but every source was read and none offers it any more (it was taken out of the catalog). Never true while a source
+    /// could not be read or when nothing is offered at all, so a down source does not say "no longer offered".
+    pub no_longer_offered: bool,
+    /// The install of this system goes through the system's package tool, which asks for the password (an rpm or deb install).
+    pub asks_password: bool,
     /// Why "Open" is locked (no window of its own); `None` when it can be pressed.
     pub open_blocked: Option<&'static str>,
     /// Why "Install" is locked: a kind this store version does not install yet ("Coming soon") or does not know ("not supported by this store
@@ -120,16 +124,6 @@ impl Card {
     #[must_use]
     pub fn is_confirming(&self) -> bool {
         self.working == Some(Working::Asking)
-    }
-
-    /// Text of the description panel: the description, or a sentence saying there is none.
-    #[must_use]
-    pub fn description_text(&self) -> String {
-        if self.description.trim().is_empty() {
-            words::NO_DESCRIPTION.to_owned()
-        } else {
-            self.description.trim().to_owned()
-        }
     }
 
     /// The version line under the name: the installed one, or the offered one; "old -> new" for an update.
@@ -286,6 +280,11 @@ impl StoreModel {
                 .find(|j| j.name == name && !j.is_finished())
                 .and_then(|j| j.progress),
             can_cancel: self.can_cancel(name),
+            no_longer_offered: self.offer_is_gone(name),
+            asks_password: !matches!(
+                self.backend.system_format(),
+                fs_packages_core::Format::TarGz
+            ),
             open_blocked: super::card_text::open_blocked(row.map(|r| r.package.kind)),
             install_blocked: super::card_text::install_blocked(
                 row.and_then(|r| r.package.locked.as_deref()),

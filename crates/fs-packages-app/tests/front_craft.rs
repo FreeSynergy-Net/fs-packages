@@ -4,6 +4,8 @@ use fs_packages_app::demo::parts;
 use fs_packages_app::model::{CardState, StoreModel, apply_show_flag};
 
 fn model() -> StoreModel {
+    static ENGLISH: std::sync::Once = std::sync::Once::new();
+    ENGLISH.call_once(|| unsafe { std::env::set_var("FS_LANG", "en") });
     let p = parts(true);
     let mut m = StoreModel::new(p.backend).with_updates(p.updates);
     m.refresh();
@@ -36,7 +38,7 @@ fn a_running_job_shows_its_phase_as_a_share_never_as_bytes() {
     assert!(card(&m, "fs-wiki").progress().is_none());
     apply_show_flag(&mut m, "--job", "fs-wiki:waiting").unwrap();
     let (share, line) = card(&m, "fs-wiki").progress().unwrap();
-    assert!(share < 0.2 && line.contains("Waiting"));
+    assert!(share < 0.2 && line.contains("catalog"));
     assert_eq!(card(&m, "fs-wiki").working_word(), "Waiting");
     apply_show_flag(&mut m, "--job", "fs-wiki:installing").unwrap();
     let (share, line) = card(&m, "fs-wiki").progress().unwrap();

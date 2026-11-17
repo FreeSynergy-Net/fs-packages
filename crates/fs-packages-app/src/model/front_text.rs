@@ -8,15 +8,7 @@ use crate::words_front as w;
 /// 13631488 -> "13 MiB"; below 10 MiB one decimal ("4.2 MiB"); below 1 MiB in KiB.
 #[must_use]
 pub fn size_text(bytes: u64) -> String {
-    const KIB: u64 = 1024;
-    const MIB: u64 = 1024 * 1024;
-    if bytes >= 10 * MIB {
-        format!("{} MiB", bytes / MIB)
-    } else if bytes >= MIB {
-        format!("{}.{} MiB", bytes / MIB, (bytes % MIB) * 10 / MIB)
-    } else {
-        format!("{} KiB", bytes.div_ceil(KIB).max(1))
-    }
+    fs_packages_core::progress_words::size_text(bytes)
 }
 
 /// The word of a kind.

@@ -56,11 +56,13 @@ pub(crate) fn install_batch(
         }
         let mut last = format!("{name} is not offered by any source");
         let mut hit = None;
+        let mut all_read = true;
         for url in crate::commands::addresses(root, want.source.as_ref())? {
             let (catalog, sig) = match fetch_source(root, &url, &verifier, &policy) {
                 Ok(x) => x,
                 Err(e) => {
                     last = e;
+                    all_read = false;
                     continue;
                 }
             };
@@ -80,6 +82,17 @@ pub(crate) fn install_batch(
             }
         }
         let Some(hit) = hit else {
+            // Every source was read and none lists it: taken out of the catalog. The sweep says so and goes on.
+            if all_read {
+                match crate::locked::outcome_unoffered(name, sweep) {
+                    Outcome::Skip(note) => {
+                        println!("{note}");
+                        continue;
+                    }
+                    Outcome::Fail(why) => last = why,
+                    Outcome::Proceed => {}
+                }
+            }
             problems.push(last);
             continue;
         };
@@ -131,8 +144,24 @@ fn run_batch(root: &Path, installer: &Installer<'_>, found: Vec<Found>) -> Vec<S
     if plans.len() > 1 {
         println!("downloading {} packages at once ...", plans.len());
     }
+    let de = fs_packages_core::progress_words::german();
+    for f in &by_name {
+        if let Some(size) = f.entry.details.size {
+            eprintln!(
+                "{}: {}",
+                f.name,
+                fs_packages_core::progress_words::downloading(
+                    de,
+                    &fs_packages_core::progress_words::size_text(size)
+                )
+            );
+        }
+    }
     let mut ready = Vec::new();
-    for (name, result) in installer.prepare_all(plans, &|_, _| {}) {
+    let prepared = fs_packages_engine::timing::timed("download and checks", || {
+        installer.prepare_all(plans, &|_, _| {})
+    });
+    for (name, result) in prepared {
         match result {
             Ok(p) => ready.push(p),
             Err(e) => problems.push(format!("{name}: {e}")),
@@ -142,7 +171,17 @@ fn run_batch(root: &Path, installer: &Installer<'_>, found: Vec<Found>) -> Vec<S
         .iter()
         .map(|p| (p.name().to_owned(), p.signer().to_owned()))
         .collect();
-    for (name, result) in installer.commit_all(ready) {
+    if !ready.is_empty() {
+        eprintln!(
+            "{}",
+            fs_packages_core::progress_words::installing_password(de)
+        );
+    }
+    let committed =
+        fs_packages_engine::timing::timed("install command (incl. password prompt)", || {
+            installer.commit_all(ready)
+        });
+    for (name, result) in committed {
         let signer = signers.get(&name).map_or("", String::as_str);
         match (result, by_name.iter().find(|f| f.name == name)) {
             (Ok(v), Some(f)) => {

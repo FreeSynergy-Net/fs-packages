@@ -47,6 +47,13 @@ pub(super) fn read_if_wanted(shared: &Shared) {
     }
 }
 
+/// The refresh button: the catalogs are fetched again (not taken from memory), then like [`start_refresh`].
+pub(super) fn start_reload(shared: &Shared) {
+    let backend = locked(shared).backend();
+    backend.forget_catalogs();
+    start_refresh(shared);
+}
+
 /// "Refresh": the catalogs are read on a worker thread, outside the lock of the model, so the window and the
 /// jobs stay alive. A result that is older than a change of the model is thrown away and read again. Not twice at once.
 pub(super) fn start_refresh(shared: &Shared) {

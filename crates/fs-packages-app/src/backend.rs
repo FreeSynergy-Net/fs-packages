@@ -215,6 +215,13 @@ pub trait StoreBackend: Send + Sync {
     /// # Errors
     /// `BackendError` when nothing can be listed at all.
     fn available(&self) -> Result<Listing, BackendError>;
+    /// "Refresh": the next [`StoreBackend::available`] reads the catalogs again instead of reusing the ones read lately. Default: nothing is kept.
+    fn forget_catalogs(&self) {}
+    /// Unix seconds of the catalog read that the last [`StoreBackend::available`] used (the oldest of its sources), 0 = not known.
+    /// A listing from memory keeps the time of its fetch; a fresh fetch sets it new. Default: not known.
+    fn catalog_read_at(&self) -> u64 {
+        0
+    }
     /// Packages on this machine.
     ///
     /// # Errors

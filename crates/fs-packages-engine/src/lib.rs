@@ -4,6 +4,7 @@
 
 mod after;
 mod batch;
+mod catalog_fetch;
 mod deb;
 mod end;
 mod ending;
@@ -25,9 +26,11 @@ mod rpm;
 mod servers;
 pub mod service;
 mod targz;
+pub mod timing;
 
 pub use after::{Settled, settle_install, settle_install_with, settle_remove};
 pub use batch::{CommitObserver, Observer};
+pub use catalog_fetch::{CATALOG_FRESH_FOR, CatalogCache, ORPHAN_AFTER, with_clone};
 pub use deb::{Deb, remove_deb, remove_native};
 pub use end::{CALL_LIMIT, Ended, end_server, end_servers, server_info, socket_of, stop_servers};
 pub use facets::{

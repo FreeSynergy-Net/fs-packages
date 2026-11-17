@@ -6,17 +6,17 @@ use std::fs;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex, PoisonError};
 
-use fs_packages_catalog::parse_catalog_in;
-use fs_packages_core::{SignaturePolicy, SignatureVerifier, SourceId, SourceRepository, Version};
-use fs_packages_engine::net::{HttpsFetch, clone_catalog};
+use fs_packages_core::{SourceId, SourceRepository, Version};
+use fs_packages_engine::CatalogCache;
+use fs_packages_engine::net::HttpsFetch;
 use fs_packages_engine::service::{Fetch, FileFetch};
-use fs_packages_pgp::PgpVerifier;
 use fs_packages_sources::FileSources;
 
 use crate::backend::{
     BackendError, InstalledDetails, InstalledRow, JobError, JobKind, Listing, PackageRow, Phase,
     Prepared, SourceRow, StoreBackend,
 };
+pub(crate) use crate::engine_read::SourceRead;
 
 pub(crate) struct AnyFetch;
 
@@ -33,9 +33,13 @@ impl Fetch for AnyFetch {
 /// The engine, working below `root`.
 #[derive(Debug, Clone)]
 pub struct EngineBackend {
-    root: PathBuf,
+    pub(crate) root: PathBuf,
     /// Names the sources offered last time: they are looked up in rpm too.
     offered: Arc<Mutex<Vec<String>>>,
+    /// Catalogs read and verified in this session: each source is fetched once, then reused until it is old or "refresh" is pressed.
+    pub(crate) catalogs: Arc<CatalogCache<SourceRead>>,
+    /// Unix seconds of the oldest catalog read the last listing used (0 = none): what "Checked ..." says.
+    listed_at: Arc<Mutex<u64>>,
 }
 
 impl EngineBackend {
@@ -45,6 +49,8 @@ impl EngineBackend {
         Self {
             root,
             offered: Arc::default(),
+            catalogs: Arc::default(),
+            listed_at: Arc::default(),
         }
     }
 
@@ -70,45 +76,6 @@ impl EngineBackend {
 
     fn file(&self) -> Result<FileSources, BackendError> {
         FileSources::load(&self.root.join("sources.toml")).map_err(other)
-    }
-
-    /// Clones one source; returns catalog and signature bytes.
-    fn fetch_source(&self, url: &str) -> Result<(Vec<u8>, Vec<u8>), String> {
-        let work = self.root.join("sources").join("work");
-        let _ = fs::remove_dir_all(&work);
-        fs::create_dir_all(work.parent().unwrap_or(&self.root)).map_err(|e| e.to_string())?;
-        clone_catalog(url, &work)?;
-        let read = |file: &str| {
-            let path = work.join(file);
-            fs::read(&path).map_err(|e| format!("{file}: {e}"))
-        };
-        let catalog = read("catalog.xml")?;
-        let sig = read("catalog.xml.asc")?;
-        Ok((catalog, sig))
-    }
-
-    /// Catalog entries of one source, after its signature was checked.
-    pub(crate) fn read_source(
-        &self,
-        url: &str,
-    ) -> Result<(fs_packages_catalog::Catalog, Vec<u8>, Vec<u8>), String> {
-        let (catalog, sig) = self.fetch_source(url)?;
-        let verifier = PgpVerifier::builtin();
-        if !SignaturePolicy::default().is_satisfied_by(&verifier.verify(&catalog, Some(&sig))) {
-            return Err("the signature of the catalog is not valid".to_owned());
-        }
-        let parsed = parse_catalog_in(
-            &String::from_utf8_lossy(&catalog),
-            &fs_packages_core::language::preferred(),
-        )
-        .map_err(|e| e.0)?;
-        fs_packages_sources::ensure_fresh(
-            &self.root.join("serials.toml"),
-            url,
-            parsed.serial,
-            parsed.expires,
-        )?;
-        Ok((parsed, catalog, sig))
     }
 
     pub(crate) fn installed_version(&self, name: &str) -> Option<Version> {
@@ -166,9 +133,12 @@ impl StoreBackend for EngineBackend {
 
     fn available(&self) -> Result<Listing, BackendError> {
         let mut listing = Listing::default();
+        let mut oldest = u64::MAX;
         for source in self.file()?.list().into_iter().filter(|s| s.enabled) {
-            match self.read_source(&source.url) {
-                Ok((catalog, _, _)) => {
+            match self.read_cached(&source.url) {
+                Ok(read) => {
+                    oldest = oldest.min(read.at);
+                    let catalog = read.catalog.clone();
                     listing
                         .packages
                         .extend(catalog.entries.into_iter().map(|e| {
@@ -199,6 +169,10 @@ impl StoreBackend for EngineBackend {
         }
         *self.offered.lock().unwrap_or_else(PoisonError::into_inner) =
             listing.packages.iter().map(|p| p.name.clone()).collect();
+        *self
+            .listed_at
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner) = if oldest == u64::MAX { 0 } else { oldest };
         Ok(listing)
     }
 
@@ -213,6 +187,17 @@ impl StoreBackend for EngineBackend {
             &fs_packages_engine::native_installed_version,
             &candidates,
         ))
+    }
+
+    fn forget_catalogs(&self) {
+        self.catalogs.forget_all();
+    }
+
+    fn catalog_read_at(&self) -> u64 {
+        *self
+            .listed_at
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
     }
 
     fn system_format(&self) -> fs_packages_core::Format {

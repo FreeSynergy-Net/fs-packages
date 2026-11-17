@@ -66,6 +66,8 @@ fn while_installing_only_the_unpacked_archive_can_be_stopped() {
 
 #[test]
 fn the_download_says_how_far_it_is_in_bytes_and_a_total_it_does_not_know_is_not_made_up() {
+    static ENGLISH: std::sync::Once = std::sync::Once::new();
+    ENGLISH.call_once(|| unsafe { std::env::set_var("FS_LANG", "en") });
     let f = fake(Vec::new(), None);
     let mut m = model(&f);
     m.begin_job("fs-tasks").unwrap();
@@ -75,7 +77,13 @@ fn the_download_says_how_far_it_is_in_bytes_and_a_total_it_does_not_know_is_not_
             .find(|c| c.name == "fs-tasks")
             .unwrap()
     };
-    assert!(card(&m).progress().unwrap().1.starts_with("Waiting"));
+    assert!(
+        card(&m)
+            .progress()
+            .unwrap()
+            .1
+            .starts_with("Fetching the catalog")
+    );
     m.observe_progress(
         "fs-tasks",
         Progress {

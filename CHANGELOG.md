@@ -1,5 +1,23 @@
 # Changelog
 
+## Unreleased
+
+### English
+- **Catalog fetch is serialised and no longer starts from a deleted folder (P0, user finding: installs failed with "shallow file could not be locked" / "source could not be read").** Before, every install job and every list read cloned the catalog into the same folder `sources/work` after deleting it, with no lock. Now a read takes a lock (a mutex for the threads, `flock` on `<root>/sources/.lock` for other processes; on Windows the same through `File::lock`, so no gap), clones into a folder of its own below `sources/` (never `/tmp`), and only when the clone is whole renames it to the place of that source (`sources/work-<hash of the address>`); the old state is removed after that, so a failed or aborted fetch leaves the old state. Left-over folders of a killed read (own name patterns only, older than 15 minutes) are removed. Window and commands read the folder inside the lock.
+- **Each source is fetched once per batch or window session:** a verified catalog is kept in memory for 10 minutes (`CATALOG_FRESH_FOR`); the install jobs of a batch use the same one. The refresh button fetches again.
+- **"Checked ..." follows the catalog reads:** a whole good read sets it to "just now" (also on the refresh button); a listing from memory keeps the time of its fetch; a failed read keeps the old time and shows the failure. Cause: only the background check ever wrote the time; the refresh never did. The time is not written to `updates.toml`, so the background check is still due when it is.
+- **Progress you can see (en/de):** "Fetching the catalog..." / "Katalog wird geholt...", "Downloading 14 MiB..." / "Lade 14 MiB...", "Installing (a password prompt may appear)..." / "Installiere (Passwort-Abfrage möglich)..." on the tile and on stderr of the commands. The password line shows only for an rpm or deb install.
+- **`FS_PACKAGES_TIMING=1`** now also times the catalog lock wait, the clone, the download and checks, and the install command (with the password prompt).
+- **A program that no source offers any more** is a hint, not an error: `update --all` and the background check in "Automatically" mode skip it ("No longer offered", exit 0); `update <name>` still fails. The tile and page say "No longer offered" / "Wird nicht mehr angeboten".
+
+### Deutsch
+- **Katalog-Abruf ist serialisiert und beginnt nicht mehr mit einem gelöschten Ordner (P0, Nutzerbefund: Installationen scheiterten mit "shallow file could not be locked" / "source could not be read").** Vorher klonte jeder Install-Job und jede Listenabfrage den Katalog nach Löschen in denselben Ordner `sources/work`, ohne Sperre. Jetzt nimmt ein Abruf eine Sperre (Mutex für die Threads, `flock` auf `<root>/sources/.lock` für andere Prozesse; unter Windows dasselbe über `File::lock`, keine Lücke), klont in einen eigenen Ordner unter `sources/` (nie `/tmp`) und benennt ihn erst bei ganzem Klon atomar an den Platz der Quelle um (`sources/work-<Hash der Adresse>`); der alte Stand wird danach entfernt, ein fehlgeschlagener oder abgebrochener Abruf lässt den alten Stand. Übriggebliebene Ordner eines abgebrochenen Abrufs (nur eigene Namen, älter als 15 Minuten) werden entfernt. Fenster und Befehle lesen den Ordner innerhalb der Sperre.
+- **Jede Quelle wird pro Batch oder Fenster-Sitzung einmal geholt:** ein geprüfter Katalog bleibt 10 Minuten im Speicher (`CATALOG_FRESH_FOR`); die Install-Jobs eines Batches nutzen denselben. Der Aktualisieren-Knopf holt neu.
+- **"Checked ..." folgt den Katalog-Abrufen:** ein ganzer guter Abruf setzt es auf "just now" (auch beim Aktualisieren-Knopf); eine Liste aus dem Speicher behält die Zeit ihres Abrufs; ein fehlgeschlagener Abruf behält die alte Zeit und zeigt den Fehler. Ursache: nur der Hintergrund-Check schrieb die Zeit, das Aktualisieren nie. Die Zeit steht nicht in `updates.toml`, der Hintergrund-Check bleibt fällig, wenn er fällig ist.
+- **Sichtbarer Fortschritt (en/de):** "Katalog wird geholt...", "Lade 14 MiB...", "Installiere (Passwort-Abfrage möglich)..." auf der Kachel und auf stderr der Befehle. Die Passwort-Zeile erscheint nur bei einer rpm- oder deb-Installation.
+- **`FS_PACKAGES_TIMING=1`** misst jetzt auch Katalog-Sperre, Klon, Download mit Prüfungen und den Installationsbefehl (mit Passwort-Abfrage).
+- **Ein Programm, das keine Quelle mehr anbietet,** ist ein Hinweis, kein Fehler: `update --all` und der Hintergrund-Check im Modus "Automatisch" überspringen es ("Wird nicht mehr angeboten", Ende 0); `update <name>` scheitert weiterhin. Kachel und Seite sagen "Wird nicht mehr angeboten".
+
 ## 0.0.18
 
 ### English

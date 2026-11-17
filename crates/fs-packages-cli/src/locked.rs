@@ -26,6 +26,20 @@ pub(crate) fn outcome(name: &str, locked: Option<&str>, sweep: bool) -> Outcome 
     }
 }
 
+/// No source offers the registered package `name` any more (all sources were read, none lists it). The sweep (`update --all`, the
+/// background check in "Automatically" mode) skips it with a hint, because the package was not asked for by name and nothing is wrong
+/// with the store; a package the person NAMED still fails (`update X` cannot update what nobody offers).
+pub(crate) fn outcome_unoffered(name: &str, sweep: bool) -> Outcome {
+    let hint = fs_packages_core::progress_words::no_longer_offered(
+        fs_packages_core::progress_words::german(),
+    );
+    if sweep {
+        Outcome::Skip(format!("{name}: {hint}; not changed"))
+    } else {
+        Outcome::Fail(format!("{name} is not offered by any source"))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -38,5 +52,11 @@ mod tests {
         // counter-proof: an unlocked package goes on in both modes
         assert_eq!(outcome("tasks", None, false), Outcome::Proceed);
         assert_eq!(outcome("tasks", None, true), Outcome::Proceed);
+    }
+
+    #[test]
+    fn a_package_nobody_offers_is_a_hint_in_the_sweep_and_a_failure_when_named() {
+        assert!(matches!(outcome_unoffered("wiki", true), Outcome::Skip(m) if m.contains("wiki")));
+        assert!(matches!(outcome_unoffered("wiki", false), Outcome::Fail(_)));
     }
 }

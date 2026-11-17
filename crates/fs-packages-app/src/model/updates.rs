@@ -84,7 +84,7 @@ impl StoreModel {
     /// Unix seconds of the last check; 0 = never.
     #[must_use]
     pub fn last_checked(&self) -> u64 {
-        self.findings.checked
+        self.findings.checked.max(self.catalog_read)
     }
 
     /// The number for the badge: the updates found, or 0 when the person switched "Tell me" off.
@@ -170,6 +170,13 @@ impl StoreModel {
             self.findings.checked,
             self.updates.now(),
         )
+    }
+
+    /// The catalogs were read whole at `at` (Unix seconds, 0 = not known): "Checked ..." says that moment. A read that failed or was only
+    /// partly good never comes here, so the old time stays; a listing from memory brings the time of its own fetch, so it does not
+    /// move the line. It is not written to `updates.toml`: the background check still decides when it is due.
+    pub(super) fn note_catalog_read(&mut self, at: u64) {
+        self.catalog_read = self.catalog_read.max(at);
     }
 
     /// Marks the check as running. `false` (and nothing changes) if it runs already.

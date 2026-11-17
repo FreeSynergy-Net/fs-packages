@@ -12,6 +12,10 @@ use fs_packages_core::{Kind, SourceError, Version};
 
 pub struct Fake {
     pub state: Mutex<State>,
+    /// What `catalog_read_at` says (Unix seconds); the test moves it like a fetch does.
+    pub read_at: Mutex<u64>,
+    /// `available` fails (a read that went wrong).
+    pub fail_available: Mutex<bool>,
 }
 
 pub struct State {
@@ -48,6 +52,8 @@ pub fn package(name: &str, version: Version) -> PackageRow {
 
 pub fn fake(installed: Vec<InstalledRow>, fail: Option<JobError>) -> Arc<Fake> {
     Arc::new(Fake {
+        read_at: Mutex::new(0),
+        fail_available: Mutex::new(false),
         state: Mutex::new(State {
             sources: vec![SourceRow {
                 id: "freesynergy".into(),
@@ -106,7 +112,15 @@ impl StoreBackend for Fake {
         s.sources.retain(|x| x.id != id);
         Ok(())
     }
+    fn catalog_read_at(&self) -> u64 {
+        *self.read_at.lock().unwrap()
+    }
     fn available(&self) -> Result<Listing, BackendError> {
+        if *self.fail_available.lock().unwrap() {
+            return Err(BackendError::Other(
+                "the catalog could not be read".to_owned(),
+            ));
+        }
         let s = self.state.lock().unwrap();
         let on = s.sources.iter().any(|x| x.enabled);
         Ok(Listing {

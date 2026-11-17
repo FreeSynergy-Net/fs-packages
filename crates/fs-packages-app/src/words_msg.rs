@@ -115,3 +115,56 @@ pub fn start_quiet(lang: Lang) -> &'static str {
         Lang::De => "Alles ist aktuell, nichts ist neu. Alle Programme stehen unter Programme.",
     }
 }
+
+/// While the package file is read and the size is known. `pct` is the share in percent when the server said the total.
+#[must_use]
+pub fn download_of(de: bool, done: &str, total: &str, pct: Option<f32>) -> String {
+    let head = if de {
+        format!("Lade {done} von {total}")
+    } else {
+        format!("Downloading {done} of {total}")
+    };
+    pct.map_or(head.clone(), |p| format!("{head} \u{b7} {p} %"))
+}
+
+/// While the package file is read and the total is not known.
+#[must_use]
+pub fn download_so_far(de: bool, done: &str) -> String {
+    if de {
+        format!("Lade {done}")
+    } else {
+        format!("Downloading {done}")
+    }
+}
+
+/// Under the bar: the file is checked, the others are waited for.
+#[must_use]
+pub fn verified_waiting(de: bool) -> &'static str {
+    if de {
+        "Pr\u{fc}fsumme und Signatur sind gut; warte auf die anderen"
+    } else {
+        "Checksum and signature are good; waiting for the others"
+    }
+}
+
+/// Under the bar: the install runs and needs no password.
+#[must_use]
+pub fn installing(de: bool) -> &'static str {
+    if de { "Installiere" } else { "Installing" }
+}
+
+/// Under the bar: done.
+#[must_use]
+pub fn installed(de: bool) -> &'static str {
+    if de { "Installiert" } else { "Installed" }
+}
+
+/// Under the bar: a failure, the old state comes back.
+#[must_use]
+pub fn going_back(de: bool) -> &'static str {
+    if de {
+        "Etwas ging schief; der alte Stand kommt zur\u{fc}ck"
+    } else {
+        "Something went wrong; going back"
+    }
+}
