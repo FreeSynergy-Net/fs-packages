@@ -96,6 +96,8 @@ impl Surface for StoreSurface {
             );
         }
         if view == View::Cards {
+            // The draw only reads the model: the cards are computed once for the whole draw, not per use.
+            let _draw = model.frame_cards();
             let keys = (Arc::clone(&self.model), Arc::clone(&self.launcher));
             return Box::new(
                 storefront(

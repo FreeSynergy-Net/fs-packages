@@ -208,6 +208,11 @@ impl StoreModel {
     /// One card per program, by name: everything a source offers plus everything installed, never a name twice.
     #[must_use]
     pub fn cards(&self) -> Vec<Card> {
+        self.cards_shared().as_ref().clone()
+    }
+
+    pub(super) fn compute_cards(&self) -> Vec<Card> {
+        self.ui.frame.builds.set(self.ui.frame.builds.get() + 1);
         let mut names: Vec<&str> = self
             .available
             .iter()

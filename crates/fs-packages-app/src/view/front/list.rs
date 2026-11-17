@@ -63,7 +63,7 @@ pub(super) fn listing(
     if cards.is_empty() {
         return div()
             .class("fs-packages-empty")
-            .child(text(if model.cards().is_empty() {
+            .child(text(if model.cards_shared().is_empty() {
                 words::EMPTY_CARDS
             } else {
                 w::NOTHING_MATCHES
@@ -143,7 +143,7 @@ pub(super) fn start(
 ) -> Div {
     let mut page = div().flex_col().gap(7.0);
     let blocks = model.start_blocks();
-    if model.cards().is_empty() {
+    if model.cards_shared().is_empty() {
         return page.child(
             div()
                 .class("fs-packages-empty")

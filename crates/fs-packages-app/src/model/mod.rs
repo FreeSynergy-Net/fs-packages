@@ -6,6 +6,7 @@
 mod admin;
 mod card_text;
 mod cards;
+mod cards_frame;
 mod cards_ui;
 mod face;
 mod fetch;
@@ -37,6 +38,7 @@ pub use card_text::columns;
 pub use cards::{
     Buttons, Card, CardState, OpenWidth, Placeholder, Working, buttons_for, placeholder,
 };
+pub use cards_frame::FrameCards;
 pub use cards_ui::CardsUi;
 pub use fetch::{Fetched, fetch};
 pub use front_page::{CapLine, CapabilityLines, DescriptionView, PackagePage, ReleaseLine};

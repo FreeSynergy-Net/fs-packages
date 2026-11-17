@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+### English
+- **Measuring hook for the resize slowness (probe, branch `unreviewed/packages-frame-log`):** `FS_FRAME_LOG=<path> fs-packages` writes one CSV row per frame (time, kind resize/rebuild/redraw, phase times, window size). The hook lives in `fs-components-app` (`launch`), so every program gets it; without the variable nothing happens. How to measure: `docs/measuring.md`.
+- **Cards are computed once for each draw:** `model.cards()` was computed up to five times and with a linear search per card for each build (`listing`, `tab_counts`, `start_blocks`, navigation counts, list/start emptiness). A draw now holds `StoreModel::frame_cards()`; inside it the cards are computed once and shared (`cards_shared()`); outside a draw nothing is cached, so no state can go stale. `StoreModel::cards_computed()` counts the computations (test hook).
+- **Icon files are looked up once for each listing:** `EngineBackend::icon_path` no longer calls `is_file()` for each card for each build; the icon folder is read once and again after the next listing.
+- Not part of this: tooltips/drop-downs only on hover, virtual list (follow-up).
+
+### Deutsch
+- **Messhaken fuer die Resize-Traegheit (Probe, Zweig `unreviewed/packages-frame-log`):** `FS_FRAME_LOG=<Pfad> fs-packages` schreibt je Frame eine CSV-Zeile (Zeit, Art resize/rebuild/redraw, Phasenzeiten, Fenstergroesse). Der Haken sitzt in `fs-components-app` (`launch`), also in jedem Programm; ohne die Variable passiert nichts. Messanleitung: `docs/measuring.md`.
+- **Karten werden je Zeichnen einmal berechnet:** `model.cards()` wurde je Aufbau bis zu fuenfmal berechnet, mit linearer Suche je Karte (`listing`, `tab_counts`, `start_blocks`, Zaehler der Navigation, Leer-Pruefung). Ein Zeichnen haelt jetzt `StoreModel::frame_cards()`; darin werden die Karten einmal berechnet und geteilt (`cards_shared()`); ausserhalb eines Zeichnens wird nichts zwischengespeichert, nichts kann veralten. `StoreModel::cards_computed()` zaehlt die Berechnungen (Test-Haken).
+- **Symboldateien werden je Listing einmal gesucht:** `EngineBackend::icon_path` ruft nicht mehr je Karte und Aufbau `is_file()` auf; der Symbolordner wird einmal gelesen und nach dem naechsten Listing neu.
+- Nicht Teil davon: Tooltip/Dropdown erst bei Hover, virtuelle Liste (Folgearbeit).
+
 ## 0.0.19
 
 ### English

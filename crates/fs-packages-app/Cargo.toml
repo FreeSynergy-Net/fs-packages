@@ -14,10 +14,10 @@ fs-packages-catalog = { path = "../fs-packages-catalog" }
 fs-packages-engine = { path = "../fs-packages-engine" }
 fs-packages-pgp = { path = "../fs-packages-pgp" }
 fs-packages-sources = { path = "../fs-packages-sources" }
-fs-components = { git = "https://github.com/FreeSynergy/fs-components", tag = "v0.0.24" }
-fs-components-app = { git = "https://github.com/FreeSynergy/fs-components", tag = "v0.0.24" }
-fs-components-render = { git = "https://github.com/FreeSynergy/fs-components", tag = "v0.0.24" }
-fs-components-styles = { git = "https://github.com/FreeSynergy/fs-components", tag = "v0.0.24" }
-fs-components-widgets = { git = "https://github.com/FreeSynergy/fs-components", tag = "v0.0.24" }
-fs-components-primitives = { git = "https://github.com/FreeSynergy/fs-components", tag = "v0.0.24" }
+fs-components = { git = "https://github.com/FreeSynergy/fs-components", branch = "unreviewed/components-frame-log" }
+fs-components-app = { git = "https://github.com/FreeSynergy/fs-components", branch = "unreviewed/components-frame-log" }
+fs-components-render = { git = "https://github.com/FreeSynergy/fs-components", branch = "unreviewed/components-frame-log" }
+fs-components-styles = { git = "https://github.com/FreeSynergy/fs-components", branch = "unreviewed/components-frame-log" }
+fs-components-widgets = { git = "https://github.com/FreeSynergy/fs-components", branch = "unreviewed/components-frame-log" }
+fs-components-primitives = { git = "https://github.com/FreeSynergy/fs-components", branch = "unreviewed/components-frame-log" }
 fs-interfaces = { git = "https://github.com/FreeSynergy/fs-interfaces", tag = "v0.0.22", features = ["rpc"] }

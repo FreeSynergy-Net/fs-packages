@@ -17,6 +17,8 @@ pub struct CardsUi {
     pub(super) confirm: Option<String>,
     /// The program that is being taken away.
     pub(super) removing: Option<String>,
+    /// The cards of the draw in progress (see [`StoreModel::frame_cards`]).
+    pub(super) frame: super::cards_frame::CardFrame,
 }
 
 impl StoreModel {
@@ -56,7 +58,7 @@ impl StoreModel {
     #[must_use]
     pub fn selected(&self) -> Option<super::Card> {
         let name = self.ui.selected.as_deref()?;
-        self.cards().into_iter().find(|c| c.name == name)
+        self.cards_shared().iter().find(|c| c.name == name).cloned()
     }
 
     /// Opens the project page of `name` with the system's opener, as a process of its own. A missing or odd

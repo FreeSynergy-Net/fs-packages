@@ -1991,8 +1991,8 @@ dependencies = [
 
 [[package]]
 name = "fs-components"
-version = "0.0.24"
-source = "git+https://github.com/FreeSynergy/fs-components?tag=v0.0.24#f3cd982f66864fa35133b161aa88e01339d0205d"
+version = "0.0.25"
+source = "git+https://github.com/FreeSynergy/fs-components?branch=unreviewed%2Fcomponents-frame-log#73882880bed9f38044bd101f551780cf56c2ff9f"
 dependencies = [
  "blinc_animation",
  "blinc_app",
@@ -2005,8 +2005,8 @@ dependencies = [
 
 [[package]]
 name = "fs-components-app"
-version = "0.0.24"
-source = "git+https://github.com/FreeSynergy/fs-components?tag=v0.0.24#f3cd982f66864fa35133b161aa88e01339d0205d"
+version = "0.0.25"
+source = "git+https://github.com/FreeSynergy/fs-components?branch=unreviewed%2Fcomponents-frame-log#73882880bed9f38044bd101f551780cf56c2ff9f"
 dependencies = [
  "blinc_app",
  "blinc_cn",
@@ -2017,12 +2017,13 @@ dependencies = [
  "fs-components-render",
  "fs-components-widgets",
  "fs-components-words",
+ "tracing",
 ]
 
 [[package]]
 name = "fs-components-mf2"
-version = "0.0.24"
-source = "git+https://github.com/FreeSynergy/fs-components?tag=v0.0.24#f3cd982f66864fa35133b161aa88e01339d0205d"
+version = "0.0.25"
+source = "git+https://github.com/FreeSynergy/fs-components?branch=unreviewed%2Fcomponents-frame-log#73882880bed9f38044bd101f551780cf56c2ff9f"
 dependencies = [
  "fs-components-words",
  "mf2",
@@ -2030,21 +2031,21 @@ dependencies = [
 
 [[package]]
 name = "fs-components-primitives"
-version = "0.0.24"
-source = "git+https://github.com/FreeSynergy/fs-components?tag=v0.0.24#f3cd982f66864fa35133b161aa88e01339d0205d"
+version = "0.0.25"
+source = "git+https://github.com/FreeSynergy/fs-components?branch=unreviewed%2Fcomponents-frame-log#73882880bed9f38044bd101f551780cf56c2ff9f"
 dependencies = [
  "blinc_cn",
  "blinc_core",
  "blinc_layout",
  "blinc_theme",
- "fs-interfaces",
+ "fs-types",
  "libc",
 ]
 
 [[package]]
 name = "fs-components-render"
-version = "0.0.24"
-source = "git+https://github.com/FreeSynergy/fs-components?tag=v0.0.24#f3cd982f66864fa35133b161aa88e01339d0205d"
+version = "0.0.25"
+source = "git+https://github.com/FreeSynergy/fs-components?branch=unreviewed%2Fcomponents-frame-log#73882880bed9f38044bd101f551780cf56c2ff9f"
 dependencies = [
  "blinc_app",
  "blinc_cn",
@@ -2061,13 +2062,13 @@ dependencies = [
 
 [[package]]
 name = "fs-components-styles"
-version = "0.0.24"
-source = "git+https://github.com/FreeSynergy/fs-components?tag=v0.0.24#f3cd982f66864fa35133b161aa88e01339d0205d"
+version = "0.0.25"
+source = "git+https://github.com/FreeSynergy/fs-components?branch=unreviewed%2Fcomponents-frame-log#73882880bed9f38044bd101f551780cf56c2ff9f"
 
 [[package]]
 name = "fs-components-widgets"
-version = "0.0.24"
-source = "git+https://github.com/FreeSynergy/fs-components?tag=v0.0.24#f3cd982f66864fa35133b161aa88e01339d0205d"
+version = "0.0.25"
+source = "git+https://github.com/FreeSynergy/fs-components?branch=unreviewed%2Fcomponents-frame-log#73882880bed9f38044bd101f551780cf56c2ff9f"
 dependencies = [
  "blinc_cn",
  "blinc_core",
@@ -2085,8 +2086,8 @@ dependencies = [
 
 [[package]]
 name = "fs-components-words"
-version = "0.0.24"
-source = "git+https://github.com/FreeSynergy/fs-components?tag=v0.0.24#f3cd982f66864fa35133b161aa88e01339d0205d"
+version = "0.0.25"
+source = "git+https://github.com/FreeSynergy/fs-components?branch=unreviewed%2Fcomponents-frame-log#73882880bed9f38044bd101f551780cf56c2ff9f"
 
 [[package]]
 name = "fs-interfaces"
@@ -2098,7 +2099,6 @@ dependencies = [
  "chrono",
  "fs-objects",
  "futures",
- "idna",
  "rustix 1.1.6",
  "tokio",
  "tokio-util",
@@ -2268,6 +2268,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "fs-types"
+version = "0.0.1"
+source = "git+https://github.com/FreeSynergy/fs-types?tag=v0.0.1#6323518a1a1abba7c241e94d948668eb208649f5"
+dependencies = [
+ "capnp",
+ "chrono",
+ "geo-uri",
+ "idna",
+ "iri-string",
+ "oxilangtag",
+ "unicode-normalization",
+]
+
+[[package]]
 name = "fs_extra"
 version = "1.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2405,6 +2419,15 @@ dependencies = [
  "typenum",
  "version_check",
  "zeroize",
+]
+
+[[package]]
+name = "geo-uri"
+version = "0.2.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "951577f365723b622bfa73389a8def7393d56c28a3fc9aff3de17fae98fc868c"
+dependencies = [
+ "thiserror 2.0.21",
 ]
 
 [[package]]
@@ -3925,6 +3948,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "791930b43c0d5973160d90a8f3894509f2b273430f5c5c73b668636d0287c5c0"
 
 [[package]]
+name = "iri-string"
+version = "0.7.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1663ee7d8cf2900cc1414b1e1eec9f348d6eaa3bcab07579f4726a4b8499f447"
+dependencies = [
+ "memchr",
+ "serde",
+]
+
+[[package]]
 name = "is-docker"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5131,6 +5164,15 @@ name = "owo-colors"
 version = "3.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c1b04fb49957986fdce4d6ee7a65027d55d4b6d2265e5848bbb507b58ccfdb6f"
+
+[[package]]
+name = "oxilangtag"
+version = "0.1.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5d3b4eb570abd4a1dcb062c31fd37b832264d9dc7292c3e69acfe926c87b063f"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "p256"

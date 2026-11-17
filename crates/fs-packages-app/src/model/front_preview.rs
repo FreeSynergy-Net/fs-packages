@@ -191,7 +191,7 @@ impl StoreModel {
             return;
         }
         let update = self
-            .cards()
+            .cards_shared()
             .iter()
             .find(|c| c.name == name)
             .is_some_and(|c| c.state == CardState::UpdateAvailable);
