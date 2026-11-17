@@ -132,6 +132,7 @@ impl Fetch for IconFetch {
             return Err(format!("{url}: only https addresses are downloaded"));
         }
         let agent = ureq::AgentBuilder::new()
+            .https_only(true)
             .timeout_connect(std::time::Duration::from_secs(20))
             .timeout_read(std::time::Duration::from_secs(30))
             .build();

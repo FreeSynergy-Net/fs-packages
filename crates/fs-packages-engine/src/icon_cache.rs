@@ -54,6 +54,9 @@ pub fn cache_dir_from_environment() -> PathBuf {
     )
 }
 
+/// Counts the writes of this process (part of the temporary name).
+static WRITES: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+
 fn is_hash(text: &str) -> bool {
     text.len() == 64
         && text
@@ -109,7 +112,9 @@ pub fn fetch_into_cache(
     }
     let dir = cache.join("icons");
     fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
-    let tmp = dir.join(format!(".{hash}.png.new"));
+    // One name for each write: two refreshes at the same time must not write the same temporary file.
+    let n = WRITES.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    let tmp = dir.join(format!(".{hash}.{}.{n}.new", std::process::id()));
     fs::write(&tmp, &bytes).map_err(|e| e.to_string())?;
     fs::rename(&tmp, dir.join(format!("{hash}.png"))).map_err(|e| e.to_string())
 }
