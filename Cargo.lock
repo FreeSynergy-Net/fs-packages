@@ -2126,7 +2126,7 @@ dependencies = [
 
 [[package]]
 name = "fs-packages"
-version = "0.0.20"
+version = "0.0.21"
 dependencies = [
  "fs-packages-app",
  "fs-packages-cli",
@@ -2137,7 +2137,7 @@ dependencies = [
 
 [[package]]
 name = "fs-packages-app"
-version = "0.0.20"
+version = "0.0.21"
 dependencies = [
  "fs-components",
  "fs-components-app",
@@ -2151,11 +2151,12 @@ dependencies = [
  "fs-packages-engine",
  "fs-packages-pgp",
  "fs-packages-sources",
+ "libc",
 ]
 
 [[package]]
 name = "fs-packages-catalog"
-version = "0.0.20"
+version = "0.0.21"
 dependencies = [
  "fs-packages-core",
  "roxmltree",
@@ -2163,7 +2164,7 @@ dependencies = [
 
 [[package]]
 name = "fs-packages-cli"
-version = "0.0.20"
+version = "0.0.21"
 dependencies = [
  "fs-packages-catalog",
  "fs-packages-core",
@@ -2176,7 +2177,7 @@ dependencies = [
 
 [[package]]
 name = "fs-packages-client"
-version = "0.0.20"
+version = "0.0.21"
 dependencies = [
  "fs-packages-sources",
  "tempfile",
@@ -2184,11 +2185,11 @@ dependencies = [
 
 [[package]]
 name = "fs-packages-core"
-version = "0.0.20"
+version = "0.0.21"
 
 [[package]]
 name = "fs-packages-engine"
-version = "0.0.20"
+version = "0.0.21"
 dependencies = [
  "capnp",
  "capnp-rpc",
@@ -2211,7 +2212,7 @@ dependencies = [
 
 [[package]]
 name = "fs-packages-pgp"
-version = "0.0.20"
+version = "0.0.21"
 dependencies = [
  "fs-packages-core",
  "pgp",
@@ -2220,7 +2221,7 @@ dependencies = [
 
 [[package]]
 name = "fs-packages-server"
-version = "0.0.20"
+version = "0.0.21"
 dependencies = [
  "capnp",
  "capnp-rpc",
@@ -2236,7 +2237,7 @@ dependencies = [
 
 [[package]]
 name = "fs-packages-sources"
-version = "0.0.20"
+version = "0.0.21"
 dependencies = [
  "fs-packages-core",
  "serde",
@@ -2246,7 +2247,7 @@ dependencies = [
 
 [[package]]
 name = "fs-packages-tuf"
-version = "0.0.20"
+version = "0.0.21"
 dependencies = [
  "tempfile",
  "tokio",
@@ -2256,7 +2257,7 @@ dependencies = [
 
 [[package]]
 name = "fs-packages-tuf-publish"
-version = "0.0.20"
+version = "0.0.21"
 dependencies = [
  "aws-lc-rs",
  "fs-packages-tuf",

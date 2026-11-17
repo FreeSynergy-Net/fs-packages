@@ -25,9 +25,9 @@ follows at the next start.
 - **Install** is one click on "Install", then the question (what is added, size, source, rights), then **Install now**. Nothing asks again; for a system install (rpm/deb) the question says that the system asks for your password next.
 - **Start** is the overview (updates, new, not-supported entries) and has no number. **Programs**, **Frontends**, **Components**, **Themes**, ... list ALL packages of their kind; the number is what the list shows.
 
-### Starting a program: its log (0.0.20)
+### Starting a program: its log, hints, stop (0.0.20, 0.0.21)
 
-"Open" starts the program as a child of its own; its output goes to `~/.local/state/fs-packages/launch-<name>.log` (`$XDG_STATE_HOME` is honoured; folder 0700, file 0600, one file per program, wiped at each start, at most 64 KB while the store observes the program (a program that forks away or keeps running after the store is closed can grow the file; a hard limit is planned)). A program that fails within 3 seconds shows its exit code and the last 10 log lines on its tile; "Open log" (German: "Protokoll öffnen") opens the file.
+"Open" starts the program as a child of its own; its output goes through a small helper (`fs-packages log-pump`, internal) to `~/.local/state/fs-packages/launch-<name>.log` (`$XDG_STATE_HOME` is honoured; folder 0700 and not a symbolic link, file 0600 and never opened through a link, one file per program, wiped at each start). The helper keeps the log at **64 KB at most at all times**, also when the program forks away and after the store is closed. A program that fails within 3 seconds shows its exit code and the last 10 log lines on its tile; one that ends within 3 seconds without an error says so; one that still runs after 8 seconds without a sign of life (no window) is told as a hint with **Stop it** (only the process the store started). "Open log" (German: "Protokoll öffnen") opens the file. The same notes show on the package page and in the compact variant. Measuring the speed of the window: `docs/measuring.md`.
 
 ## Commands and the install form
 
