@@ -43,8 +43,13 @@ where
 
 fn register(root: &std::path::Path) {
     let mut registry = Registry::load(&root.join("installed.toml")).unwrap();
-    registry.record("tool", "1.0.0", "https://example.invalid/catalog");
-    registry.record("other", "0.3.0-rc.1", "https://example.invalid/catalog");
+    registry.record("tool", "1.0.0", "https://example.invalid/catalog", false);
+    registry.record(
+        "other",
+        "0.3.0-rc.1",
+        "https://example.invalid/catalog",
+        false,
+    );
     registry.save().unwrap();
 }
 

@@ -38,8 +38,8 @@ fn all_three_places_are_combined_once_per_name() {
     .unwrap();
     // registered only, and also linked with an older version
     let mut reg = Registry::load(&root.join("installed.toml")).unwrap();
-    reg.record("both", "2.0.0", "https://example.org/s");
-    reg.record("regonly", "0.3.0", "https://example.org/s");
+    reg.record("both", "2.0.0", "https://example.org/s", false);
+    reg.record("regonly", "0.3.0", "https://example.org/s", false);
     reg.save().unwrap();
     fs::create_dir_all(root.join("packages/both/1.5.0")).unwrap();
     symlink(root.join("packages/both/1.5.0"), root.join("current/both")).unwrap();
@@ -76,7 +76,7 @@ fn details_list_only_what_exists() {
     .unwrap();
     fs::write(bin.join("tasks"), "").unwrap();
     let mut reg = Registry::load(&root.join("installed.toml")).unwrap();
-    reg.record("tasks", "0.6.0", "https://example.org/s");
+    reg.record("tasks", "0.6.0", "https://example.org/s", false);
     reg.set_facets("tasks", vec!["tasks-board".into(), "tasks-gone".into()]);
     reg.save().unwrap();
     fs::write(bin.join("tasks-board"), "").unwrap();

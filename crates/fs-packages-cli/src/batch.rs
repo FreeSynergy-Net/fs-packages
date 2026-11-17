@@ -4,26 +4,16 @@
 
 use std::path::Path;
 
-use fs_packages_catalog::CatalogEntry;
 use fs_packages_engine::ProcRunningCheck;
 use fs_packages_engine::service::{Fetch, InstallFailure, Installer};
 
 use crate::commands::{AnyFetch, fetch_source, installed, read_catalog, trust};
-use crate::locked::Outcome;
+use crate::plan::{Found, Miss, plan_batch};
 
 /// One package to install or update, and where to get it from (`None`: any enabled source).
 pub(crate) struct Want {
     pub name: String,
     pub source: Option<String>,
-}
-
-/// What the batch found out about one wanted package before downloading.
-struct Found {
-    name: String,
-    url: String,
-    entry: CatalogEntry,
-    catalog: Vec<u8>,
-    sig: Vec<u8>,
 }
 
 /// Installs or updates all of `wants` as one batch; `only_newer` makes it an update; `sweep` marks `update --all`, which skips a locked package
@@ -45,80 +35,9 @@ pub(crate) fn install_batch(
         prefer: fs_packages_engine::preferred_format(),
         policy: policy.clone(),
     };
-    let mut problems = Vec::new();
-    let mut found = Vec::new();
-    for want in wants {
-        let name = want.name.as_str();
-        let current = installed(root, name);
-        if only_newer && current.is_none() {
-            problems.push(format!("{name} is not installed; use install"));
-            continue;
-        }
-        let mut last = format!("{name} is not offered by any source");
-        let mut hit = None;
-        let mut all_read = true;
-        for url in crate::commands::addresses(root, want.source.as_ref())? {
-            let (catalog, sig) = match fetch_source(root, &url, &verifier, &policy) {
-                Ok(x) => x,
-                Err(e) => {
-                    last = e;
-                    all_read = false;
-                    continue;
-                }
-            };
-            if let Some(entry) = read_catalog(&catalog)?
-                .entries
-                .into_iter()
-                .find(|e| e.name.as_str() == name)
-            {
-                hit = Some(Found {
-                    name: name.to_owned(),
-                    url,
-                    entry,
-                    catalog,
-                    sig,
-                });
-                break;
-            }
-        }
-        let Some(hit) = hit else {
-            // Every source was read and none lists it: taken out of the catalog. The sweep says so and goes on.
-            if all_read {
-                match crate::locked::outcome_unoffered(name, sweep) {
-                    Outcome::Skip(note) => {
-                        println!("{note}");
-                        continue;
-                    }
-                    Outcome::Fail(why) => last = why,
-                    Outcome::Proceed => {}
-                }
-            }
-            problems.push(last);
-            continue;
-        };
-        match crate::locked::outcome(name, hit.entry.locked.as_deref(), sweep) {
-            Outcome::Proceed => {}
-            Outcome::Skip(note) => {
-                println!("{note}");
-                continue;
-            }
-            Outcome::Fail(why) => {
-                problems.push(why);
-                continue;
-            }
-        }
-        if only_newer && current.is_some_and(|c| hit.entry.version <= c) {
-            println!(
-                "{name} is up to date ({})",
-                current.map_or_else(String::new, |c| c.to_string())
-            );
-            continue;
-        }
-        if crate::prerelease::skips_prerelease(root, name, &hit.entry, sweep && only_newer) {
-            continue;
-        }
-        found.push(hit);
-    }
+    let (found, mut problems) = plan_batch(root, wants, only_newer, sweep, &|want| {
+        lookup(root, want, &verifier, &policy)
+    })?;
     problems.extend(run_batch(root, &installer, found));
     if problems.is_empty() {
         return Ok(());
@@ -249,22 +168,53 @@ fn finish(root: &Path, f: &Found, v: fs_packages_core::Version, signer: &str) ->
     {
         problems.push(e);
     }
-    match fs_packages_sources::Registry::load(&root.join("installed.toml")) {
-        Ok(mut registry) => {
-            registry.record(&f.name, &v.to_string(), &f.url);
-            registry.set_prerelease(&f.name, f.entry.details.prerelease);
-            registry.set_facets(&f.name, settled.made);
-            if let Err(e) = registry.save() {
-                problems.push(format!(
-                    "{}: the list of installed programs was not saved: {e:?}",
-                    f.name
-                ));
-            }
-        }
-        Err(e) => problems.push(format!(
-            "{}: the list of installed programs cannot be read: {e:?}",
-            f.name
-        )),
+    if let Err(e) = crate::register::register_install(
+        root,
+        &f.name,
+        &v.to_string(),
+        &f.url,
+        &f.entry,
+        settled.made,
+    ) {
+        problems.push(e);
     }
     problems
+}
+
+/// Reads the sources of `want` (all enabled ones, or the one it names) for its entry. `Err`: a source could not be understood at all.
+fn lookup(
+    root: &Path,
+    want: &Want,
+    verifier: &fs_packages_pgp::PgpVerifier,
+    policy: &fs_packages_core::SignaturePolicy,
+) -> Result<Result<Found, Miss>, String> {
+    let name = want.name.as_str();
+    let mut miss = Miss {
+        last: format!("{name} is not offered by any source"),
+        all_read: true,
+    };
+    for url in crate::commands::addresses(root, want.source.as_ref())? {
+        let (catalog, sig) = match fetch_source(root, &url, verifier, policy) {
+            Ok(x) => x,
+            Err(e) => {
+                miss.last = e;
+                miss.all_read = false;
+                continue;
+            }
+        };
+        if let Some(entry) = read_catalog(&catalog)?
+            .entries
+            .into_iter()
+            .find(|e| e.name.as_str() == name)
+        {
+            return Ok(Ok(Found {
+                name: name.to_owned(),
+                url,
+                entry,
+                catalog,
+                sig,
+            }));
+        }
+    }
+    Ok(Err(miss))
 }

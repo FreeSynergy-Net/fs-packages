@@ -6,10 +6,10 @@ fn records_keeps_the_auto_update_choice_and_survives_a_restart() {
     let path = tmp.path().join("sub/installed.toml");
     let mut r = Registry::load(&path).unwrap();
     assert_eq!(r.list().len(), 0);
-    r.record("tasks", "1.0.0", "https://x/cat");
+    r.record("tasks", "1.0.0", "https://x/cat", false);
     assert!(r.set_auto_update("tasks", false));
     assert!(!r.set_auto_update("nope", false));
-    r.record("tasks", "1.1.0", "https://x/cat2");
+    r.record("tasks", "1.1.0", "https://x/cat2", false);
     r.save().unwrap();
     let r = Registry::load(&path).unwrap();
     let t = r.get("tasks").unwrap();
@@ -43,7 +43,7 @@ fn auto_update_defaults_to_on() {
 }
 
 #[test]
-fn an_entry_without_the_prerelease_note_is_stable_and_the_note_survives_a_restart() {
+fn an_entry_without_the_prerelease_note_is_stable_and_every_record_sets_it_in_both_directions() {
     let tmp = tempfile::tempdir().unwrap();
     let path = tmp.path().join("installed.toml");
     std::fs::write(
@@ -53,7 +53,14 @@ fn an_entry_without_the_prerelease_note_is_stable_and_the_note_survives_a_restar
     .unwrap();
     let mut r = Registry::load(&path).unwrap();
     assert!(!r.get("a").unwrap().prerelease);
-    r.set_prerelease("a", true);
+    r.record("a", "1.1.0-rc.1", "s", true);
     r.save().unwrap();
     assert!(Registry::load(&path).unwrap().get("a").unwrap().prerelease);
+    // a later stable release takes the mark away again; a new package gets it from the first record
+    let mut r = Registry::load(&path).unwrap();
+    r.record("a", "1.1.0", "s", false);
+    r.record("b", "0.0.1", "s", true);
+    r.save().unwrap();
+    let r = Registry::load(&path).unwrap();
+    assert!(!r.get("a").unwrap().prerelease && r.get("b").unwrap().prerelease);
 }
