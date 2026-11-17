@@ -74,12 +74,14 @@ impl Registry {
         self.entries.iter().find(|e| e.name == name)
     }
 
-    /// Notes an install or update; keeps the person's `auto_update` choice for a known package.
-    pub fn record(&mut self, name: &str, version: &str, source: &str) {
+    /// Notes an install or update; keeps the person's `auto_update` choice for a known package. `prerelease` says whether the installed
+    /// release is a pre-release; it is set at every install, in both directions (an old `true` does not stay after a stable release).
+    pub fn record(&mut self, name: &str, version: &str, source: &str, prerelease: bool) {
         match self.entries.iter_mut().find(|e| e.name == name) {
             Some(e) => {
                 version.clone_into(&mut e.version);
                 source.clone_into(&mut e.source);
+                e.prerelease = prerelease;
             }
             None => self.entries.push(Installed {
                 name: name.to_owned(),
@@ -87,7 +89,7 @@ impl Registry {
                 source: source.to_owned(),
                 auto_update: true,
                 facets: Vec::new(),
-                prerelease: false,
+                prerelease,
             }),
         }
     }
@@ -96,13 +98,6 @@ impl Registry {
     pub fn set_facets(&mut self, name: &str, facets: Vec<String>) {
         if let Some(e) = self.entries.iter_mut().find(|e| e.name == name) {
             e.facets = facets;
-        }
-    }
-
-    /// Notes whether the installed release is a pre-release.
-    pub fn set_prerelease(&mut self, name: &str, on: bool) {
-        if let Some(e) = self.entries.iter_mut().find(|e| e.name == name) {
-            e.prerelease = on;
         }
     }
 

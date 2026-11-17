@@ -18,6 +18,8 @@ struct Staged {
     source: String,
     signer: String,
     facets: Vec<String>,
+    /// Whether the chosen release is a pre-release (`<release type="development">`).
+    prerelease: bool,
 }
 
 impl EngineBackend {
@@ -78,6 +80,7 @@ impl EngineBackend {
                 source: source.url,
                 signer,
                 facets: offered.facets.clone(),
+                prerelease: offered.details.prerelease,
             })));
         }
         Err(last)
@@ -103,12 +106,17 @@ impl EngineBackend {
         let verifier = PgpVerifier::builtin();
         let running = ProcRunningCheck::new(self.root());
         let installer = self.installer(&verifier, &running);
-        let notes: HashMap<String, (String, String, Vec<String>)> = staged
+        let notes: HashMap<String, (String, String, Vec<String>, bool)> = staged
             .iter()
             .map(|s| {
                 (
                     s.ready.name().to_owned(),
-                    (s.source.clone(), s.signer.clone(), s.facets.clone()),
+                    (
+                        s.source.clone(),
+                        s.signer.clone(),
+                        s.facets.clone(),
+                        s.prerelease,
+                    ),
                 )
             })
             .collect();
@@ -123,9 +131,10 @@ impl EngineBackend {
                 Err(_) => None,
             };
             let mut result = result;
-            if let (Some(version), Some((source, signer, facets))) = (ok_version, notes.get(&name))
+            if let (Some(version), Some((source, signer, facets, prerelease))) =
+                (ok_version, notes.get(&name))
             {
-                let problems = self.remember(&name, version, source, signer, facets);
+                let problems = self.remember(&name, version, (source, signer), facets, *prerelease);
                 if !problems.is_empty() {
                     result = Err(incomplete(result, version, &problems));
                 }
