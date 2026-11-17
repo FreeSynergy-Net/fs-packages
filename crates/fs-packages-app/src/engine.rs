@@ -40,6 +40,8 @@ pub struct EngineBackend {
     pub(crate) catalogs: Arc<CatalogCache<SourceRead>>,
     /// Unix seconds of the oldest catalog read the last listing used (0 = none): what "Checked ..." says.
     listed_at: Arc<Mutex<u64>>,
+    /// The names that have an icon file in `<root>/icons`, read once per listing (not one `stat` per card per draw).
+    icons: Arc<Mutex<Option<std::collections::HashSet<String>>>>,
 }
 
 impl EngineBackend {
@@ -51,6 +53,7 @@ impl EngineBackend {
             offered: Arc::default(),
             catalogs: Arc::default(),
             listed_at: Arc::default(),
+            icons: Arc::default(),
         }
     }
 
@@ -89,6 +92,21 @@ impl EngineBackend {
             .find(|r| r.name == name)
             .map(|r| r.version)
     }
+}
+
+/// The names of the `<name>.png` files (regular files only) in `dir`; a missing folder is an empty set.
+fn icon_names(dir: &std::path::Path) -> std::collections::HashSet<String> {
+    let Ok(entries) = fs::read_dir(dir) else {
+        return std::collections::HashSet::new();
+    };
+    entries
+        .flatten()
+        .filter(|e| e.path().is_file())
+        .filter_map(|e| {
+            let name = e.file_name().into_string().ok()?;
+            name.strip_suffix(".png").map(str::to_owned)
+        })
+        .collect()
 }
 
 fn other(error: impl std::fmt::Debug) -> BackendError {
@@ -132,6 +150,8 @@ impl StoreBackend for EngineBackend {
     }
 
     fn available(&self) -> Result<Listing, BackendError> {
+        // A new listing: the icon folder is read again at the next draw.
+        *self.icons.lock().unwrap_or_else(PoisonError::into_inner) = None;
         let mut listing = Listing::default();
         let mut oldest = u64::MAX;
         for source in self.file()?.list().into_iter().filter(|s| s.enabled) {
@@ -208,8 +228,11 @@ impl StoreBackend for EngineBackend {
         if name.is_empty() || name.contains(['/', '\\']) || name.starts_with('.') {
             return None;
         }
-        let path = self.root.join("icons").join(format!("{name}.png"));
-        path.is_file().then_some(path)
+        let mut icons = self.icons.lock().unwrap_or_else(PoisonError::into_inner);
+        let known = icons.get_or_insert_with(|| icon_names(&self.root.join("icons")));
+        known
+            .contains(name)
+            .then(|| self.root.join("icons").join(format!("{name}.png")))
     }
 
     fn details(&self, name: &str) -> InstalledDetails {

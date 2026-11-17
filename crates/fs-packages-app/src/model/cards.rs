@@ -4,6 +4,7 @@
 use crate::backend::{JobKind, Phase};
 use fs_packages_core::{Kind, Version};
 
+use super::cards_index::Index;
 use super::store::StoreModel;
 use super::types::Action;
 
@@ -211,6 +212,11 @@ impl StoreModel {
     /// One card per program, by name: everything a source offers plus everything installed, never a name twice.
     #[must_use]
     pub fn cards(&self) -> Vec<Card> {
+        self.cards_shared().as_ref().clone()
+    }
+
+    pub(super) fn compute_cards(&self) -> Vec<Card> {
+        self.ui.frame.builds.set(self.ui.frame.builds.get() + 1);
         let mut names: Vec<&str> = self
             .available
             .iter()
@@ -219,17 +225,17 @@ impl StoreModel {
             .collect();
         names.sort_unstable();
         names.dedup();
-        names.into_iter().map(|name| self.card(name)).collect()
+        let index = Index::of(self);
+        names
+            .into_iter()
+            .map(|name| self.card(name, &index))
+            .collect()
     }
 
     /// The card of `name`, as it is now.
-    fn card(&self, name: &str) -> Card {
-        let row = self.available.iter().find(|r| r.package.name == name);
-        let installed = self
-            .installed
-            .iter()
-            .find(|r| r.name == name)
-            .map(|r| r.version);
+    fn card(&self, name: &str, index: &Index<'_>) -> Card {
+        let row = index.available.get(name).copied();
+        let installed = index.installed.get(name).map(|r| r.version);
         let state = match (installed, row.map(|r| r.action)) {
             (None, _) => CardState::NotInstalled,
             (Some(_), Some(Action::Update)) => CardState::UpdateAvailable,
@@ -240,9 +246,9 @@ impl StoreModel {
         } else if self.ui.confirm.as_deref() == Some(name) {
             Some(Working::Asking)
         } else {
-            self.jobs
-                .iter()
-                .find(|j| j.name == name && !j.is_finished())
+            index
+                .running
+                .get(name)
                 .map(|j| Working::Job(j.kind, j.phase))
         };
         Card {
@@ -260,10 +266,9 @@ impl StoreModel {
             hovered: self.ui.hovered.as_deref() == Some(name),
             selected: self.ui.selected.as_deref() == Some(name),
             working,
-            failure: self
-                .jobs
-                .iter()
-                .find(|j| j.name == name)
+            failure: index
+                .job
+                .get(name)
                 .and_then(|j| j.error.as_ref())
                 .map(|e| super::text::job_failed_line(&self.title(name), e)),
             buttons: buttons_for(state),
@@ -277,11 +282,7 @@ impl StoreModel {
                 super::front_text::size_text,
             ),
             trust: super::front_text::trust_word(row.and_then(|r| r.package.details.trust)),
-            bytes: self
-                .jobs
-                .iter()
-                .find(|j| j.name == name && !j.is_finished())
-                .and_then(|j| j.progress),
+            bytes: index.running.get(name).and_then(|j| j.progress),
             can_cancel: self.can_cancel(name),
             no_longer_offered: self.offer_is_gone(name),
             asks_password: !matches!(

@@ -28,7 +28,7 @@ impl StoreModel {
     /// packages of a kind are the sections of the navigation, not blocks here.
     #[must_use]
     pub fn start_blocks(&self) -> Vec<StartBlock> {
-        let cards = self.cards();
+        let cards = self.cards_shared();
         let block = |title: &str, more: Option<Section>, list: Vec<Card>| StartBlock {
             title: title.to_owned(),
             more,

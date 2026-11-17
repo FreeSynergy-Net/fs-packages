@@ -82,7 +82,10 @@ impl StoreModel {
     }
 
     fn kind_count(&self, kind: Kind) -> usize {
-        self.cards().iter().filter(|c| c.kind == Some(kind)).count()
+        self.cards_shared()
+            .iter()
+            .filter(|c| c.kind == Some(kind))
+            .count()
     }
 
     /// The navigation: the start page and a kind each (locked while it has no package; servers and icon sets say "Coming soon").
@@ -145,9 +148,9 @@ impl StoreModel {
     /// How many packages each tab would show (with the section and the search, not the tab).
     #[must_use]
     pub fn tab_counts(&self) -> Vec<(Tab, usize)> {
-        let base: Vec<Card> = self
-            .cards()
-            .into_iter()
+        let cards = self.cards_shared();
+        let base: Vec<&Card> = cards
+            .iter()
             .filter(|c| self.in_section(c) && self.matches_search(c))
             .collect();
         Tab::ALL
@@ -164,11 +167,12 @@ impl StoreModel {
     #[must_use]
     pub fn listing(&self) -> Vec<Card> {
         let mut cards: Vec<Card> = self
-            .cards()
-            .into_iter()
+            .cards_shared()
+            .iter()
             .filter(|c| {
                 self.in_section(c) && self.matches_search(c) && Self::in_tab(self.front.tab, c)
             })
+            .cloned()
             .collect();
         let key = |c: &Card| {
             let d = self.row_of(&c.name).map(|r| &r.package.details);

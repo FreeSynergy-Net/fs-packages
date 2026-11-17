@@ -167,7 +167,11 @@ impl StoreModel {
     /// The page of `name`, as it is now; `None` when no source offers it and it is not installed.
     #[must_use]
     pub fn package_page(&self, name: &str) -> Option<PackagePage> {
-        let card = self.cards().into_iter().find(|c| c.name == name)?;
+        let card = self
+            .cards_shared()
+            .iter()
+            .find(|c| c.name == name)
+            .cloned()?;
         let row = self.available.iter().find(|r| r.package.name == name);
         let d = row.map(|r| &r.package.details);
         let source_url = row
