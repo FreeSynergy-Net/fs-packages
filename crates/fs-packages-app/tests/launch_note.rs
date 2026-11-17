@@ -1,6 +1,8 @@
 //! The note on the tile of a program that failed right after the start, and the "Open log" button: the model takes the launcher's reports
 //! and says them on the card (the words come from the words module; the test checks what is language-independent).
 
+#![allow(clippy::assert_is_empty)]
+
 mod common;
 
 use std::path::PathBuf;

@@ -5,6 +5,7 @@
 //! still open for writing cannot be executed: ETXTBSY).
 
 #![cfg(unix)]
+#![allow(clippy::assert_is_empty)]
 
 use std::fs;
 use std::os::unix::fs::PermissionsExt;
@@ -17,6 +18,12 @@ use fs_packages_app::launch_watch::LaunchReport;
 use fs_packages_app::launcher::{Launcher, ProcessLauncher};
 
 static STUBS: Mutex<()> = Mutex::new(());
+
+fn guard() -> std::sync::MutexGuard<'static, ()> {
+    STUBS
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+}
 
 struct Stage {
     dir: PathBuf,
@@ -68,7 +75,7 @@ fn mode(path: &Path) -> u32 {
 
 #[test]
 fn a_program_that_fails_at_once_is_reported_with_the_line_it_wrote() {
-    let _g = STUBS.lock().unwrap_or_else(|e| e.into_inner());
+    let _g = guard();
     let s = stage("fails");
     s.stub("fs-stub-fail", "echo 'boom: no display' >&2\nexit 3");
     let l = s.launcher(Duration::from_secs(3));
@@ -91,7 +98,7 @@ fn a_program_that_fails_at_once_is_reported_with_the_line_it_wrote() {
 
 #[test]
 fn a_program_that_runs_on_is_not_reported() {
-    let _g = STUBS.lock().unwrap_or_else(|e| e.into_inner());
+    let _g = guard();
     let s = stage("runs");
     let pid = s.dir.join("pid");
     s.stub(
@@ -120,7 +127,7 @@ fn a_program_that_runs_on_is_not_reported() {
 
 #[test]
 fn a_failure_after_the_observation_time_is_not_reported() {
-    let _g = STUBS.lock().unwrap_or_else(|e| e.into_inner());
+    let _g = guard();
     let s = stage("late");
     s.stub("fs-stub-late", "echo late >&2\nsleep 1\nexit 2");
     let l = s.launcher(Duration::from_millis(300));
@@ -131,7 +138,7 @@ fn a_failure_after_the_observation_time_is_not_reported() {
 
 #[test]
 fn an_early_clean_end_is_not_reported() {
-    let _g = STUBS.lock().unwrap_or_else(|e| e.into_inner());
+    let _g = guard();
     let s = stage("clean");
     s.stub("fs-stub-clean", "echo done >&2\nexit 0");
     let l = s.launcher(Duration::from_secs(3));
@@ -142,7 +149,7 @@ fn an_early_clean_end_is_not_reported() {
 
 #[test]
 fn the_log_is_private_even_when_folder_and_file_were_open() {
-    let _g = STUBS.lock().unwrap_or_else(|e| e.into_inner());
+    let _g = guard();
     let s = stage("modes");
     s.stub("fs-stub-fail", "echo x >&2\nexit 1");
     let l = s.launcher(Duration::from_secs(3));
@@ -164,7 +171,7 @@ fn the_log_is_private_even_when_folder_and_file_were_open() {
 
 #[test]
 fn a_long_log_keeps_its_end_within_64_kb() {
-    let _g = STUBS.lock().unwrap_or_else(|e| e.into_inner());
+    let _g = guard();
     let s = stage("big");
     s.stub(
         "fs-stub-big",
@@ -184,7 +191,7 @@ fn a_long_log_keeps_its_end_within_64_kb() {
 
 #[test]
 fn a_new_start_overwrites_the_log() {
-    let _g = STUBS.lock().unwrap_or_else(|e| e.into_inner());
+    let _g = guard();
     let s = stage("again");
     let n = s.dir.join("n");
     s.stub(
@@ -218,7 +225,7 @@ fn the_name_is_reduced_before_it_is_part_of_a_path() {
 
 #[test]
 fn a_log_that_cannot_be_written_is_told_with_its_cause_and_the_program_starts() {
-    let _g = STUBS.lock().unwrap_or_else(|e| e.into_inner());
+    let _g = guard();
     let s = stage("nolog");
     let mark = s.dir.join("started");
     s.stub("fs-stub-nolog", &format!("echo ok > '{}'", mark.display()));

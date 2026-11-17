@@ -1,9 +1,8 @@
 //! Pattern: View-model (one card per program: what the card shows and which buttons it has). Pure Rust, no GUI
 //! types; the window only draws a [`Card`].
 
-use fs_packages_core::{Kind, Version};
-
 use crate::backend::{JobKind, Phase};
+use fs_packages_core::{Kind, Version};
 
 use super::store::StoreModel;
 use super::types::Action;
@@ -117,7 +116,7 @@ pub struct Card {
     /// Why "Install" is locked: a kind this store version does not install yet ("Coming soon") or does not know ("not supported by this store
     /// version", or "needs Store 1.2.3" for an entry that wants a newer store). `None` when it can be installed.
     pub install_blocked: Option<String>,
-    /// What happened to the program right after it was started (first line), then the last lines of its log; empty when nothing is to tell.
+    /// What happened right after the start (first line), then the last lines of its log; empty when nothing is to tell.
     pub launch_note: Vec<String>,
     /// A log of the program exists, so "Open log" shows.
     pub log_available: bool,
