@@ -25,6 +25,10 @@ follows at the next start.
 - **Install** is one click on "Install", then the question (what is added, size, source, rights), then **Install now**. Nothing asks again; for a system install (rpm/deb) the question says that the system asks for your password next.
 - **Start** is the overview (updates, new, not-supported entries) and has no number. **Programs**, **Frontends**, **Components**, **Themes**, ... list ALL packages of their kind; the number is what the list shows.
 
+### Starting a program: its log (0.0.20)
+
+"Open" starts the program as a child of its own; its output goes to `~/.local/state/fs-packages/launch-<name>.log` (`$XDG_STATE_HOME` is honoured; folder 0700, file 0600, one file per program, wiped at each start, at most 64 KB). A program that fails within 3 seconds shows its exit code and the last 10 log lines on its tile; "Open log" (German: "Protokoll öffnen") opens the file.
+
 ## Commands and the install form
 
 The commands of a program and its facets (`~/.local/bin/<name>`) follow the form that is active: `/usr/bin` for an rpm/deb,

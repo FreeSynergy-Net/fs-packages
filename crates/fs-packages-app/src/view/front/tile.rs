@@ -214,6 +214,19 @@ fn running(card: &Card, shared: &Shared, share: f32, line: &str, width: f32) -> 
         )
 }
 
+/// "Open log": opens the log of the started program with the system's opener.
+fn log_link(card: &Card, shared: &Shared, launcher: &Arc<dyn Launcher>) -> Div {
+    let (shared, launcher, name) = (Arc::clone(shared), Arc::clone(launcher), card.name.clone());
+    link(
+        &format!("log-{}", card.name),
+        crate::words_launch::open_log(crate::words_lang::Lang::current()),
+        Arc::new(move || {
+            locked(&shared).open_log(&name, launcher.as_ref());
+            rebuild();
+        }),
+    )
+}
+
 /// The tile of `card`, `number` in the list, `width` pixels wide.
 pub(super) fn tile(
     card: &Card,
@@ -240,6 +253,17 @@ pub(super) fn tile(
     );
     if let Some(why) = &card.failure {
         body = body.child(text(why.clone()).class("craft-sub"));
+    }
+    for (i, line) in card.launch_note.iter().enumerate() {
+        let class = if i == 0 {
+            "craft-sub"
+        } else {
+            "craft-caps-dim"
+        };
+        body = body.child(text(line.clone()).class(class));
+    }
+    if card.log_available {
+        body = body.child(log_link(card, shared, launcher));
     }
     if let Some((share, line)) = progress_view {
         body = body.child(running(card, shared, share, &line, inner));

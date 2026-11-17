@@ -82,6 +82,11 @@ pub enum Problem {
         /// The reason, as a developer text.
         detail: String,
     },
+    /// The log of a started program could not be opened.
+    LogOpenFailed {
+        /// The reason, as a developer text.
+        detail: String,
+    },
     /// "Uninstall" failed: which program and why.
     UninstallFailed {
         /// Package name.

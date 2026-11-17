@@ -34,6 +34,11 @@ pub(super) fn rebuild() {
     }
 }
 
+/// Draw again when a started program reported (the launcher calls it from its watching thread).
+pub fn request_redraw() {
+    rebuild();
+}
+
 /// The Escape key of a window (DOM key code).
 const KEY_ESCAPE: u32 = 27;
 
@@ -75,6 +80,7 @@ impl Surface for StoreSurface {
         let mut model = locked(&self.model);
         let view = model.view();
         model.show(view);
+        model.sync_launch(self.launcher.as_ref());
         model.sync_notices(super::notices::now());
         if view == View::Cards && model.face() == Face::Compact {
             let keys = (Arc::clone(&self.model), Arc::clone(&self.launcher));

@@ -17,6 +17,8 @@ pub struct CardsUi {
     pub(super) confirm: Option<String>,
     /// The program that is being taken away.
     pub(super) removing: Option<String>,
+    /// Started programs: notes and logs.
+    pub(super) launch: super::launch::LaunchUi,
 }
 
 impl StoreModel {

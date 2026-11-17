@@ -20,4 +20,4 @@ mod sources;
 
 pub use check::start_check;
 pub use menu::menus;
-pub use shell::{Shared, store_app};
+pub use shell::{Shared, request_redraw, store_app};

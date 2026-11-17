@@ -117,6 +117,10 @@ pub struct Card {
     /// Why "Install" is locked: a kind this store version does not install yet ("Coming soon") or does not know ("not supported by this store
     /// version", or "needs Store 1.2.3" for an entry that wants a newer store). `None` when it can be installed.
     pub install_blocked: Option<String>,
+    /// What happened to the program right after it was started (first line), then the last lines of its log; empty when nothing is to tell.
+    pub launch_note: Vec<String>,
+    /// A log of the program exists, so "Open log" shows.
+    pub log_available: bool,
 }
 
 impl Card {
@@ -290,6 +294,8 @@ impl StoreModel {
                 row.and_then(|r| r.package.locked.as_deref()),
                 row.map(|r| r.package.kind),
             ),
+            launch_note: self.launch_note(name),
+            log_available: self.has_log(name),
         }
     }
 }

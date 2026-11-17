@@ -111,6 +111,10 @@ impl StoreModel {
                     words::OPEN_FAILED,
                     &[("command", command), ("detail", detail)],
                 ),
+                Problem::LogOpenFailed { detail } => words::fill(
+                    crate::words_launch::open_log_failed(crate::words_lang::Lang::current()),
+                    &[("detail", detail)],
+                ),
                 Problem::UninstallFailed { name, detail } => words::fill(
                     words::UNINSTALL_FAILED,
                     &[("name", &self.title(name)), ("detail", detail)],

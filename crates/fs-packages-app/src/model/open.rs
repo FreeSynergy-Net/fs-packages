@@ -42,9 +42,11 @@ impl StoreModel {
             });
             return;
         };
-        if let Err(detail) = launcher.start(&command) {
-            self.problems
-                .push(Problem::LaunchFailed { command, detail });
+        match launcher.start(&command) {
+            Ok(()) => self.note_started(name, &command, launcher),
+            Err(detail) => self
+                .problems
+                .push(Problem::LaunchFailed { command, detail }),
         }
     }
 }

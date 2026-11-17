@@ -21,6 +21,7 @@ mod front_types;
 mod job_end;
 mod jobs;
 mod jobs_cancel;
+mod launch;
 mod menu;
 mod notices;
 mod open;
@@ -47,6 +48,7 @@ pub use front_types::{
     FrontUi, Layout, NavEntry, NeedsState, Section, Sort, StartBlock, Tab, TableRow,
 };
 pub use jobs::{JobState, JobView, Ticket};
+pub use launch::LaunchUi;
 pub use menu::{Command, Effect, help_url, is_help_key, is_quit_key};
 pub use notices::{ERROR_SECONDS, INFO_SECONDS, Notice, NoticeBoard, Severity};
 pub use refresh::{ReadTicket, RefreshState};

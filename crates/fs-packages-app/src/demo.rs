@@ -197,7 +197,10 @@ pub fn parts(demo: bool) -> Parts {
         Parts {
             backend: Arc::new(EngineBackend::from_environment()),
             updates: Arc::new(FileUpdates::from_environment()),
-            launcher: Arc::new(ProcessLauncher::new(fs_packages_engine::default_bin_dir())),
+            launcher: Arc::new(
+                ProcessLauncher::new(fs_packages_engine::default_bin_dir())
+                    .with_redraw(Arc::new(crate::view::request_redraw)),
+            ),
             check_at_start_allowed: true,
         }
     }
