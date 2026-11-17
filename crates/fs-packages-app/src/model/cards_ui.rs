@@ -19,8 +19,8 @@ pub struct CardsUi {
     pub(super) removing: Option<String>,
     /// Started programs: notes and logs.
     pub(super) launch: super::launch::LaunchUi,
-    /// The cards of the draw in progress (see [`StoreModel::frame_cards`]).
-    pub(super) frame: super::cards_frame::CardFrame,
+    /// The cards kept between draws (see [`StoreModel::cards_shared`]).
+    pub(super) memo: super::cards_memo::CardMemo,
 }
 
 impl StoreModel {

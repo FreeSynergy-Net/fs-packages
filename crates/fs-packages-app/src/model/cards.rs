@@ -165,7 +165,7 @@ impl StoreModel {
     }
 
     pub(super) fn compute_cards(&self) -> Vec<Card> {
-        self.ui.frame.builds.set(self.ui.frame.builds.get() + 1);
+        self.ui.memo.builds.set(self.ui.memo.builds.get() + 1);
         let mut names: Vec<&str> = self
             .available
             .iter()

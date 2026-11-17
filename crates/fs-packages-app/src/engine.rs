@@ -42,6 +42,8 @@ pub struct EngineBackend {
     listed_at: Arc<Mutex<u64>>,
     /// The names that have an icon file in `<root>/icons`, read once per listing (not one `stat` per card per draw).
     icons: Arc<Mutex<Option<std::collections::HashSet<String>>>>,
+    /// The format this system takes, asked once (it starts `rpm -qf` or `dpkg -S`, ~8 ms: not once per card per draw).
+    format: Arc<std::sync::OnceLock<fs_packages_core::Format>>,
 }
 
 impl EngineBackend {
@@ -54,6 +56,7 @@ impl EngineBackend {
             catalogs: Arc::default(),
             listed_at: Arc::default(),
             icons: Arc::default(),
+            format: Arc::default(),
         }
     }
 
@@ -221,7 +224,9 @@ impl StoreBackend for EngineBackend {
     }
 
     fn system_format(&self) -> fs_packages_core::Format {
-        fs_packages_engine::preferred_format()
+        *self
+            .format
+            .get_or_init(fs_packages_engine::preferred_format)
     }
 
     fn icon_path(&self, name: &str) -> Option<PathBuf> {
