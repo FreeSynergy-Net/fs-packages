@@ -23,6 +23,7 @@ pub(in crate::view) const STYLES: &str = r"
 .fs-c-h { font-weight: 600; font-size: var(--text-base); }
 .fs-c-ok { color: var(--success); }
 .fs-c-warn { color: var(--warning); }
+.fs-c-quiet { color: var(--text-secondary); }
 .fs-c-bad { color: var(--error); }
 .fs-c-info { color: var(--accent); }
 .fs-c-warning { padding: 6px 8px; border-left-width: 3px; border-left-color: var(--warning); background: var(--warning-bg); }

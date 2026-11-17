@@ -13,25 +13,30 @@ const LOGO: f32 = 56.0;
 /// Corner radius of the logo square.
 const LOGO_RADIUS: f32 = 14.0;
 
+/// The tone of the pre-release badge: neutral (`Quiet`), never the amber of "update available" (`Warn`), so the two marks stay apart.
+fn prerelease_tone() -> fs_components_widgets::craft::BadgeTone {
+    fs_components_widgets::craft::BadgeTone::Quiet
+}
+
 /// The badge "Pre-release" / "Vorabversion" of a package whose offered release is one (`<release type="development">`); `None` otherwise.
 pub(super) fn prerelease_badge(card: &Card) -> Option<Div> {
-    use fs_components_widgets::craft::{BadgeTone, badge};
+    use fs_components_widgets::craft::badge;
     card.prerelease.then(|| {
         div().flex_row().child(badge(
             crate::words_front::prerelease(crate::words_front::Lang::current()),
-            BadgeTone::Warn,
+            prerelease_tone(),
         ))
     })
 }
 
-/// The same mark as a warning-coloured line in the compact window.
+/// The same mark as a neutral (secondary-text) line in the compact window.
 pub(super) fn prerelease_note(card: &Card) -> Option<Div> {
     card.prerelease.then(|| {
         div().child(
             text(crate::words_front::prerelease(
                 crate::words_front::Lang::current(),
             ))
-            .class("fs-c-warn"),
+            .class("fs-c-quiet"),
         )
     })
 }
@@ -110,4 +115,16 @@ pub(super) fn logo_plain(card: &Card, side: f32) -> Div {
                 .bold()
                 .color(Color::WHITE),
         )
+}
+
+#[cfg(test)]
+mod tests {
+    use fs_components_widgets::craft::BadgeTone;
+
+    /// The pre-release badge is neutral, not the amber of "update available".
+    #[test]
+    fn prerelease_badge_is_quiet_not_warn() {
+        assert!(matches!(super::prerelease_tone(), BadgeTone::Quiet));
+        assert!(!matches!(super::prerelease_tone(), BadgeTone::Warn));
+    }
 }

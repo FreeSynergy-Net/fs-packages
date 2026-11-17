@@ -61,7 +61,7 @@ fn mark(card: &Card, selected: bool) -> Div {
         CardState::Installed => ("Installed", "fs-c-ok"),
         CardState::NotInstalled if card.prerelease => (
             crate::words_front::prerelease(crate::words_front::Lang::current()),
-            "fs-c-warn",
+            "fs-c-quiet",
         ),
         CardState::NotInstalled => ("", ""),
     };
