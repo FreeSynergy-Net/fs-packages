@@ -7,8 +7,8 @@ use std::time::Instant;
 
 use common::{fake, model, package, v};
 
-fn ms(t: Instant, per: usize) -> f64 {
-    t.elapsed().as_secs_f64() * 1000.0 / per as f64
+fn ms(t: Instant, per: u32) -> f64 {
+    t.elapsed().as_secs_f64() * 1000.0 / f64::from(per)
 }
 
 #[test]
@@ -23,14 +23,13 @@ fn profile_one_card() {
     }
     let m = model(&f);
     assert_eq!(m.cards().len(), 14);
-    let n = 200;
     let t = Instant::now();
-    for _ in 0..n {
+    for _ in 0..200 {
         let _ = m.cards();
     }
     println!(
         "compute 14 cards with the fake backend: {:.3} ms per card",
-        ms(t, n * 14)
+        ms(t, 200 * 14)
     );
     let t = Instant::now();
     for _ in 0..5 {
@@ -41,8 +40,8 @@ fn profile_one_card() {
         ms(t, 5)
     );
     let t = Instant::now();
-    for _ in 0..n {
+    for _ in 0..200 {
         let _ = fs_packages_core::language::from_environment();
     }
-    println!("Lang::current: {:.4} ms per call", ms(t, n));
+    println!("Lang::current: {:.4} ms per call", ms(t, 200));
 }
