@@ -47,7 +47,7 @@ pub fn link_programs(
         let meta = fs::metadata(entry.path())?;
         // `<name>-app` and `<name>-server` are reached through the one command `<name>` (see `link_facets`)
         let plain = file == format!("{name}-app") || file == format!("{name}-server");
-        if !meta.is_file() || !is_executable(&meta) || file.starts_with('.') || plain {
+        if !meta.is_file() || !is_executable(&meta)? || file.starts_with('.') || plain {
             continue;
         }
         let link = bin_dir.join(&file);

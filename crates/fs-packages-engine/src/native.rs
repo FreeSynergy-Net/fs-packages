@@ -28,7 +28,7 @@ pub(crate) fn write_private(
         let one = crate::platform::private_file_options(
             fs::OpenOptions::new().write(true).create_new(true),
         )
-        .open(&file)
+        .and_then(|options| options.open(&file))
         .and_then(|mut f| f.write_all(bytes));
         paths.push(file);
         if let Err(e) = one {

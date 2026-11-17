@@ -1,5 +1,6 @@
 //! Pattern: Strategy (`RunningCheck` for Linux, through `/proc`).
 
+#[cfg(unix)]
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -9,6 +10,7 @@ use fs_packages_core::RunningCheck;
 /// The calling process itself is ignored, so the store can update itself: its own old files stay on disk
 /// (the switch is a symlink, nothing is overwritten) and the new version starts at the next launch.
 #[derive(Debug)]
+#[cfg_attr(not(unix), allow(dead_code))] // Windows: no `/proc`, the fields are not read (port open)
 pub struct ProcRunningCheck {
     root: PathBuf,
     ignore: u32,
@@ -33,6 +35,21 @@ impl ProcRunningCheck {
 
 impl RunningCheck for ProcRunningCheck {
     fn is_running(&self, name: &str) -> bool {
+        // Windows: there is no `/proc` (port open, `unsupported-on-windows{process-list}`). The trait answers only yes or no, so
+        // the safe answer is "running": an update or removal is then refused instead of replacing files of a running program.
+        #[cfg(not(unix))]
+        {
+            let _ = name;
+            return true;
+        }
+        #[cfg(unix)]
+        self.scan(name)
+    }
+}
+
+impl ProcRunningCheck {
+    #[cfg(unix)]
+    fn scan(&self, name: &str) -> bool {
         let base = self.root.join("packages").join(name);
         let Ok(procs) = fs::read_dir("/proc") else {
             return false;
