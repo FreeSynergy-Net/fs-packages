@@ -231,6 +231,10 @@ fn the_menu_of_the_lowest_tile_opens_above_its_trigger_inside_the_window() {
 }
 
 #[test]
+#[cfg_attr(
+    not(unix),
+    ignore = "no GPU or software adapter on the Windows runner (Linux CI uses lavapipe): drawing is not checked here yet"
+)]
 fn the_open_menu_is_drawn_inside_the_window() {
     let mut w = window(SHORT.0, SHORT.1);
     let trigger = w.triggers_from_below()[0];

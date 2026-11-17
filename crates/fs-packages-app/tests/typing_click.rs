@@ -163,6 +163,10 @@ fn holds_for_every_title_bar(field: Edges, point: (f32, f32)) -> bool {
 }
 
 #[test]
+#[cfg_attr(
+    not(unix),
+    ignore = "no GPU or software adapter on the Windows runner (Linux CI uses lavapipe): drawing is not checked here yet"
+)]
 fn the_click_point_of_the_typing_test_lies_in_the_field() {
     let mut w = window();
     let field = w.field();
@@ -178,6 +182,10 @@ fn the_click_point_of_the_typing_test_lies_in_the_field() {
 }
 
 #[test]
+#[cfg_attr(
+    not(unix),
+    ignore = "no GPU or software adapter on the Windows runner (Linux CI uses lavapipe): drawing is not checked here yet"
+)]
 fn a_click_there_gives_the_field_the_keyboard_and_a_character_reaches_the_model() {
     for bar in [0.0, TITLE_BAR_MAX] {
         let mut w = window();

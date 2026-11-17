@@ -38,6 +38,10 @@ fn draw(m: fs_packages_app::model::StoreModel, name: &str) {
 }
 
 #[test]
+#[cfg_attr(
+    not(unix),
+    ignore = "no GPU or software adapter on the Windows runner (Linux CI uses lavapipe): drawing is not checked here yet"
+)]
 fn the_start_the_question_the_strip_and_the_history_all_draw() {
     let f = fake(Vec::new(), None);
     let mut m = model(&f);

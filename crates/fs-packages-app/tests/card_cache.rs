@@ -86,6 +86,10 @@ impl Launcher for NoLauncher {
 }
 
 #[test]
+#[cfg_attr(
+    not(unix),
+    ignore = "no GPU or software adapter on the Windows runner (Linux CI uses lavapipe): drawing is not checked here yet"
+)]
 fn a_resize_does_not_compute_the_cards_again() {
     let f = fake(Vec::new(), None);
     let shared = Arc::new(Mutex::new(model(&f)));
@@ -135,6 +139,10 @@ fn the_resize_path_of_14_cards_is_fast() {
 }
 
 #[test]
+#[cfg_attr(
+    not(unix),
+    ignore = "no GPU or software adapter on the Windows runner (Linux CI uses lavapipe): drawing is not checked here yet"
+)]
 fn the_storefront_build_computes_the_cards_once() {
     let f = fake(Vec::new(), None);
     let shared = Arc::new(Mutex::new(model(&f)));
