@@ -233,9 +233,7 @@ pub(super) fn page(
         .child(text(p.card.title.clone()).size(24.0).bold())
         .child(text(caps(&format!("{} - {}", p.kind, p.version))).class("craft-caps-dim"))
         .children(prerelease_badge(&p.card));
-    if p.icon_missing {
-        title = title.child(label_dim(w::ICON_MISSING));
-    }
+    title = title.children(p.icon_missing.then(|| label_dim(w::ICON_MISSING)));
     if let Some(why) = p.card.open_blocked.filter(|_| p.card.installed.is_some()) {
         title = title.child(text(why).class("craft-sub"));
     }

@@ -8,6 +8,7 @@ mod batch;
 mod commands;
 mod locked;
 mod own;
+mod prerelease;
 mod relink;
 mod source_list;
 mod tuf;

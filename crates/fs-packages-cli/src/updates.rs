@@ -88,7 +88,7 @@ pub(crate) fn check(root: &Path, extra: Option<&String>) -> Result<(), String> {
         match offered {
             Ok(Some(o)) if o.version > have && o.installable() => {
                 let mark = if o.details.prerelease {
-                    format!(" ({})", crate::commands::prerelease_label())
+                    format!(" ({})", crate::prerelease::prerelease_label())
                 } else {
                     String::new()
                 };
