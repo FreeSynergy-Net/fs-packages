@@ -258,7 +258,17 @@ impl Launcher for ProcessLauncher {
             use std::os::unix::process::CommandExt;
             process.process_group(0);
         }
-        let child = process.spawn().map_err(|e| e.to_string())?;
+        let child = match process.spawn() {
+            Ok(child) => child,
+            Err(e) => {
+                // The pump is already running: let go of the pipe (it ends at its end) and pick it up, or it stays a zombie until the store ends.
+                drop(process);
+                if let Some(mut pump) = pump {
+                    std::thread::spawn(move || pump.wait().map(|_| ()));
+                }
+                return Err(e.to_string());
+            }
+        };
         watch(
             child,
             Watch {

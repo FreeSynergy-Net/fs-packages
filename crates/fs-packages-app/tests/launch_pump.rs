@@ -139,3 +139,80 @@ fn a_symbolic_link_is_not_followed_by_the_pump() {
     assert!(pump(open_existing(&link), input).is_err());
     assert_eq!(fs::read_to_string(&foreign).unwrap(), "keep\n");
 }
+
+/// One line per read, as a program that prints line by line.
+struct Lines {
+    left: usize,
+    line: Vec<u8>,
+}
+
+impl Read for Lines {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        if self.left == 0 {
+            return Ok(0);
+        }
+        self.left -= 1;
+        buf[..self.line.len()].copy_from_slice(&self.line);
+        Ok(self.line.len())
+    }
+}
+
+#[test]
+fn line_by_line_output_is_rewritten_in_bundles_not_per_line() {
+    use fs_packages_app::launch_pump::{REWRITE_BYTES, pump_with};
+    let log = file("lines.log");
+    let line = b"0123456789 a log line of forty bytes....\n".to_vec();
+    let input = Lines {
+        left: 50_000,
+        line: line.clone(),
+    };
+    let total = 50_000 * line.len();
+    let start = std::time::Instant::now();
+    let (result, stats) = pump_with(open_existing(&log), input, |_| {});
+    let took = start.elapsed();
+    result.unwrap();
+    // the content is still exactly the end of the output
+    let kept = fs::read(&log).unwrap();
+    assert_eq!(kept.len(), LOG_MAX);
+    assert!(kept.ends_with(&line));
+    // before: ~50 000 rewrites of 64 KB (3 GB); now at most one per 16 KB of new bytes (+ time + the end)
+    let most = total / REWRITE_BYTES + 3 + usize::try_from(took.as_millis() / 100).unwrap();
+    assert!(
+        stats.rewrites <= most,
+        "{} rewrites for {total} bytes (at most {most})",
+        stats.rewrites
+    );
+    assert!(stats.rewrites >= 1);
+}
+
+#[test]
+fn a_burst_followed_by_silence_is_written_after_the_waiting_time() {
+    use fs_packages_app::launch_pump::{REWRITE_EVERY, pump_with};
+    // 60 000 bytes fill nearly all; 10 000 more overflow (less than the byte limit: a rewrite waits); then comes one more read. The wait
+    // callback is asked before that read, and the rewrite is done by then: the log has its full size before the read, not only at the end.
+    let log = file("quiet.log");
+    let sizes = Rc::new(RefCell::new(Vec::new()));
+    let input = Feed {
+        pieces: vec![
+            bytes(0, 40_000),
+            bytes(40_000, 20_000),
+            bytes(60_000, 10_000),
+        ],
+        log: log.clone(),
+        sizes: Rc::clone(&sizes),
+    };
+    let mut waited = Vec::new();
+    let (result, _) = pump_with(open_existing(&log), input, |left| {
+        waited.push(left);
+        std::thread::sleep(left);
+    });
+    result.unwrap();
+    assert!(!waited.is_empty(), "asked while a rewrite was waiting");
+    assert!(waited.iter().all(|w| *w <= REWRITE_EVERY));
+    assert_eq!(
+        sizes.borrow()[3],
+        LOG_MAX as u64,
+        "written after the waiting time, before the next output: {:?}",
+        sizes.borrow()
+    );
+}
