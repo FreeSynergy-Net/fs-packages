@@ -59,6 +59,10 @@ fn component(name: &str, sha: &str) -> String {
 }
 
 #[test]
+#[cfg_attr(
+    not(unix),
+    ignore = "install needs symbolic links and private files: unsupported-on-windows, Windows port open"
+)]
 fn a_failed_download_does_not_stop_the_others() {
     let tmp = tempfile::tempdir().unwrap();
     let (a, b, c) = (tarball("a"), tarball("b"), tarball("c"));
@@ -170,6 +174,10 @@ fn rpm_component(name: &str, files: &[(&str, &[u8])]) -> String {
 }
 
 #[test]
+#[cfg_attr(
+    not(unix),
+    ignore = "install needs symbolic links and private files: unsupported-on-windows, Windows port open"
+)]
 fn all_rpm_of_a_batch_go_to_one_pkexec_call() {
     let tmp = tempfile::tempdir().unwrap();
     let blobs: Vec<(&str, &[u8])> = vec![("one", b"1"), ("two", b"2"), ("three", b"3")];

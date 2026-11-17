@@ -73,6 +73,10 @@ fn tarball() -> Vec<u8> {
 }
 
 #[test]
+#[cfg_attr(
+    not(unix),
+    ignore = "install needs symbolic links and private files: unsupported-on-windows, Windows port open"
+)]
 fn local_source_with_an_explicitly_trusted_test_key_installs_a_pre_release() {
     let k = key();
     let tgz = tarball();

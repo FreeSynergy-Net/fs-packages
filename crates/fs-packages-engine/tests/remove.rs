@@ -30,6 +30,10 @@ fn installed(tmp: &std::path::Path) -> std::path::PathBuf {
 }
 
 #[test]
+#[cfg_attr(
+    not(unix),
+    ignore = "install needs symbolic links and private files: unsupported-on-windows, Windows port open"
+)]
 fn remove_takes_link_and_versions_away() {
     let tmp = tempfile::tempdir().unwrap();
     let root = installed(tmp.path());
@@ -43,6 +47,10 @@ fn remove_takes_link_and_versions_away() {
 }
 
 #[test]
+#[cfg_attr(
+    not(unix),
+    ignore = "install needs symbolic links and private files: unsupported-on-windows, Windows port open"
+)]
 fn a_running_program_is_not_removed_and_bad_names_are_refused() {
     let tmp = tempfile::tempdir().unwrap();
     let root = installed(tmp.path());

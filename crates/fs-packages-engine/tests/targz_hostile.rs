@@ -83,6 +83,10 @@ fn symlink_and_hard_link_entries_are_refused() {
 }
 
 #[test]
+#[cfg_attr(
+    not(unix),
+    ignore = "install needs symbolic links and private files: unsupported-on-windows, Windows port open"
+)]
 fn archive_made_with_tar_dot_is_accepted() {
     let tmp = tempfile::tempdir().unwrap();
     let bytes = raw_tar(&[

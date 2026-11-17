@@ -162,6 +162,10 @@ fn a_windows_store_is_told_unsupported_not_given_something_else() {
 }
 
 #[test]
+#[cfg_attr(
+    not(unix),
+    ignore = "install needs symbolic links and private files: unsupported-on-windows, Windows port open"
+)]
 fn all_deb_of_a_batch_go_to_one_pkexec_apt_call() {
     let tmp = tempfile::tempdir().unwrap();
     let cat = catalog("app", &BLOBS);

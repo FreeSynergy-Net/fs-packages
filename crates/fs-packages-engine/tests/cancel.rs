@@ -12,6 +12,10 @@ use fs_packages_core::*;
 use fs_packages_engine::service::InstallFailure;
 
 #[test]
+#[cfg_attr(
+    not(unix),
+    ignore = "install needs symbolic links and private files: unsupported-on-windows, Windows port open"
+)]
 fn cancel_in_the_middle_of_a_download_changes_nothing_and_without_it_the_same_data_installs() {
     let tmp = tempfile::tempdir().unwrap();
     let root = tmp.path().join("root");
@@ -61,6 +65,10 @@ fn cancel_after_the_checks_and_before_the_install_writes_nothing() {
 }
 
 #[test]
+#[cfg_attr(
+    not(unix),
+    ignore = "install needs symbolic links and private files: unsupported-on-windows, Windows port open"
+)]
 fn cancel_in_the_middle_of_unpacking_leaves_the_old_version_current_and_no_half_tree() {
     let tmp = tempfile::tempdir().unwrap();
     let root = tmp.path().join("root");

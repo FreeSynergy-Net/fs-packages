@@ -95,6 +95,10 @@ fn an_entry_with_an_unreadable_min_store_is_not_planned_either() {
 }
 
 #[test]
+#[cfg_attr(
+    not(unix),
+    ignore = "install needs symbolic links and private files: unsupported-on-windows, Windows port open"
+)]
 fn counter_proof_an_entry_that_wants_an_older_store_is_planned_and_installed() {
     let (r, tmp) = try_plan("0.0.1");
     assert_eq!(r, Ok(()));

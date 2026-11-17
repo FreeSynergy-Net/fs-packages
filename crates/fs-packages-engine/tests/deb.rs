@@ -28,6 +28,10 @@ impl Commander for &mut Fake {
 }
 
 #[test]
+#[cfg_attr(
+    not(unix),
+    ignore = "install needs symbolic links and private files: unsupported-on-windows, Windows port open"
+)]
 fn apt_gets_the_verified_bytes_through_pkexec_and_the_file_is_removed_afterwards() {
     let tmp = tempfile::tempdir().unwrap();
     let mut fake = Fake::default();
@@ -54,6 +58,10 @@ fn apt_gets_the_verified_bytes_through_pkexec_and_the_file_is_removed_afterwards
 }
 
 #[test]
+#[cfg_attr(
+    not(unix),
+    ignore = "install needs symbolic links and private files: unsupported-on-windows, Windows port open"
+)]
 fn a_failing_apt_is_reported_as_rolled_back_and_leaves_no_file() {
     let tmp = tempfile::tempdir().unwrap();
     let mut fake = Fake {
@@ -79,6 +87,10 @@ fn a_failing_apt_is_reported_as_rolled_back_and_leaves_no_file() {
 }
 
 #[test]
+#[cfg_attr(
+    not(unix),
+    ignore = "install needs symbolic links and private files: unsupported-on-windows, Windows port open"
+)]
 fn several_debs_go_to_one_apt_call() {
     let tmp = tempfile::tempdir().unwrap();
     let mut fake = Fake::default();

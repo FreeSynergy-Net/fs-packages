@@ -8,6 +8,10 @@ use fs_packages_core::*;
 use fs_packages_engine::{ProcRunningCheck, TarGz};
 
 #[test]
+#[cfg_attr(
+    not(unix),
+    ignore = "install needs symbolic links and private files: unsupported-on-windows, Windows port open"
+)]
 fn install_then_update_keeps_old_version_and_switches_current() {
     let tmp = tempfile::tempdir().unwrap();
     let root = tmp.path().join("root");
@@ -47,6 +51,10 @@ fn install_then_update_keeps_old_version_and_switches_current() {
 }
 
 #[test]
+#[cfg_attr(
+    not(unix),
+    ignore = "install needs symbolic links and private files: unsupported-on-windows, Windows port open"
+)]
 fn broken_archive_rolls_back_to_previous() {
     let tmp = tempfile::tempdir().unwrap();
     let root = tmp.path().join("root");
@@ -100,12 +108,20 @@ fn failed_first_install_leaves_nothing() {
 }
 
 #[test]
+#[cfg_attr(
+    not(unix),
+    ignore = "Windows: no process list yet, ProcRunningCheck answers running (fail-closed), Windows port open"
+)]
 fn proc_check_sees_no_program_that_is_not_there() {
     let tmp = tempfile::tempdir().unwrap();
     assert!(!ProcRunningCheck::new(tmp.path()).is_running("tasks"));
 }
 
 #[test]
+#[cfg_attr(
+    not(unix),
+    ignore = "Windows: no process list yet, ProcRunningCheck answers running (fail-closed), Windows port open"
+)]
 fn proc_check_sees_a_running_program_and_ignores_the_caller() {
     use std::process::Command;
     let tmp = tempfile::tempdir().unwrap();
@@ -122,6 +138,10 @@ fn proc_check_sees_a_running_program_and_ignores_the_caller() {
 }
 
 #[test]
+#[cfg_attr(
+    not(unix),
+    ignore = "install needs symbolic links and private files: unsupported-on-windows, Windows port open"
+)]
 fn a_wrapper_directory_named_after_the_package_is_stripped() {
     let tmp = tempfile::tempdir().unwrap();
     let root = tmp.path().join("root");
@@ -161,6 +181,10 @@ fn a_wrapper_directory_named_after_the_package_is_stripped() {
 }
 
 #[test]
+#[cfg_attr(
+    not(unix),
+    ignore = "install needs symbolic links and private files: unsupported-on-windows, Windows port open"
+)]
 fn reinstalling_the_same_version_with_a_broken_archive_keeps_the_working_install() {
     let tmp = tempfile::tempdir().unwrap();
     let root = tmp.path().join("root");
@@ -199,6 +223,10 @@ fn reinstalling_the_same_version_with_a_broken_archive_keeps_the_working_install
 }
 
 #[test]
+#[cfg_attr(
+    not(unix),
+    ignore = "install needs symbolic links and private files: unsupported-on-windows, Windows port open"
+)]
 fn a_relative_root_still_gives_working_links() {
     let tmp = tempfile::tempdir().unwrap();
     let a1 = archive(tmp.path(), "one", "v1");

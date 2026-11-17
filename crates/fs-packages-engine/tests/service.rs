@@ -79,6 +79,10 @@ fn run(
 }
 
 #[test]
+#[cfg_attr(
+    not(unix),
+    ignore = "install needs symbolic links and private files: unsupported-on-windows, Windows port open"
+)]
 fn good_chain_installs() {
     let (r, tmp) = run(b"good", b"good", None);
     assert_eq!(r, Ok(Version::new(1, 2, 3)));
