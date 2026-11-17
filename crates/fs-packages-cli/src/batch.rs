@@ -114,23 +114,8 @@ pub(crate) fn install_batch(
             );
             continue;
         }
-        let lang = fs_packages_core::language::from_environment();
-        match crate::prerelease::outcome_prerelease(
-            name,
-            crate::updates::installed_prerelease(root, name),
-            hit.entry.details.prerelease,
-            sweep && only_newer,
-            &lang,
-        ) {
-            Outcome::Proceed => {}
-            Outcome::Skip(note) => {
-                println!("{note}");
-                continue;
-            }
-            Outcome::Fail(why) => {
-                problems.push(why);
-                continue;
-            }
+        if crate::prerelease::skips_prerelease(root, name, &hit.entry, sweep && only_newer) {
+            continue;
         }
         found.push(hit);
     }
