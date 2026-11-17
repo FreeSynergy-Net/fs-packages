@@ -40,7 +40,7 @@ impl StoreModel {
         // Debug text of the inputs: a new field of a row changes the fingerprint without anyone remembering to add it.
         let _ = write!(
             sink,
-            "{:?}|{:?}|{:?}|{:?}|{:?}|{:?}|{:?}|{:?}|{:?}|{:?}|{}",
+            "{:?}|{:?}|{:?}|{:?}|{:?}|{:?}|{:?}|{:?}|{:?}|{}",
             self.available,
             self.installed,
             self.offers,
@@ -55,7 +55,6 @@ impl StoreModel {
             ),
             self.ui.launch,
             self.catalog_read,
-            crate::words_lang::Lang::current(),
             fs_packages_core::language::from_environment(),
         );
         sink.0.finish()
