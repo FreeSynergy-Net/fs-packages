@@ -1,4 +1,4 @@
-//! The mark "Vorabversion" / "Pre-release" on a tile and on the details page: the demo store is drawn in German (`FS_LANG=de`) into
+//! The mark "Vorabversion" / "Pre-release" on a tile and on the details page: the demo store is drawn in German and English (`FS_LANG`) into
 //! `FS_PACKAGES_SHOTS` when that is set, and the cards say so in the model. Where there is no graphics adapter the picture is skipped.
 
 use std::path::PathBuf;
@@ -13,9 +13,9 @@ use fs_packages_app::demo::parts;
 use fs_packages_app::model::StoreModel;
 use fs_packages_app::view::store_app;
 
-fn shoot(page: Option<&str>, file: &str) {
-    // SAFETY: the only test of this file, nothing reads the environment before.
-    unsafe { std::env::set_var("FS_LANG", "de") };
+fn shoot(lang: &str, page: Option<&str>, file: &str) {
+    // SAFETY: the only test of this file, nothing reads the environment in parallel.
+    unsafe { std::env::set_var("FS_LANG", lang) };
     let parts = parts(true);
     let mut model = StoreModel::new(parts.backend).with_updates(parts.updates);
     fs_components_render::use_style(None);
@@ -60,6 +60,8 @@ fn shoot(page: Option<&str>, file: &str) {
 
 #[test]
 fn tiles_and_page_show_the_prerelease_mark() {
-    shoot(None, "kacheln-de.png");
-    shoot(Some("fs-people"), "detailseite-de.png");
+    for lang in ["de", "en"] {
+        shoot(lang, None, &format!("kacheln-{lang}.png"));
+        shoot(lang, Some("fs-people"), &format!("detailseite-{lang}.png"));
+    }
 }
