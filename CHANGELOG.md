@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- **Measuring hook 2 (probe branch `unreviewed/packages-frame-log-2`):** the card list is created through an index by name (one lookup per card instead of scanning the lists for each card, was O(N^2)); the time and number of the cards really created and the dropdowns/tooltips built go to the new frame log columns `cards_ms`, `cards_n`, `stateful_n` (only with `FS_FRAME_LOG`). Pin: `unreviewed/components-frame-log-2`.
+- Auf Deutsch: **Messhaken 2:** die Kartenliste entsteht ueber einen Index nach Namen (ein Nachschlagen je Karte statt jede Liste je Karte zu durchsuchen, war O(N^2)); Zeit und Anzahl der wirklich erzeugten Karten und der gebauten Dropdowns/Tooltips gehen in die neuen Log-Spalten `cards_ms`, `cards_n`, `stateful_n` (nur mit `FS_FRAME_LOG`). Pin: `unreviewed/components-frame-log-2`.
+
 ### English
 - **Measuring hook for the resize slowness (probe, branch `unreviewed/packages-frame-log`):** `FS_FRAME_LOG=<path> fs-packages` writes one CSV row per frame (time, kind resize/rebuild/redraw, phase times, window size). The hook lives in `fs-components-app` (`launch`), so every program gets it; without the variable nothing happens. How to measure: `docs/measuring.md`.
 - **Cards are computed once for each draw:** `model.cards()` was computed up to five times and with a linear search per card for each build (`listing`, `tab_counts`, `start_blocks`, navigation counts, list/start emptiness). A draw now holds `StoreModel::frame_cards()`; inside it the cards are computed once and shared (`cards_shared()`); outside a draw nothing is cached, so no state can go stale. `StoreModel::cards_computed()` counts the computations (test hook).

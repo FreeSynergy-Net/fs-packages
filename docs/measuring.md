@@ -11,12 +11,13 @@ Use this when the window feels slow while its size is changed.
 3. Send us `/tmp/x.csv`. Please add: the program version (`fs-packages --version`), release or debug build, Wayland or X11, the screen scaling, and how many entries the catalog showed.
 
 The file is a plain CSV, mode 0600, one line per frame:
-`t_ms,kind,total_ms,check_ms,rebuild_ms,tick_ms,render_ms,chain_ms,width,height`
+`t_ms,kind,total_ms,check_ms,rebuild_ms,tick_ms,render_ms,chain_ms,width,height,build_ms,blinc_ms,cards_ms,cards_n,stateful_n`
 
 - `t_ms`: milliseconds since the program opened the log.
 - `kind`: `resize` (first frame after the window size changed), `rebuild` (another frame that rebuilt the tree), `redraw`.
 - `total_ms`: the whole frame. `check_ms`: does the tree need a rebuild. `rebuild_ms`: our build, tree, style and layout. `tick_ms`: animations. `render_ms`: painting on the GPU. `chain_ms`: what follows the paint. (Blinc does not time layout or the swapchain present on their own.)
 - `width`, `height`: window size in logical pixels.
+- `build_ms`: our build closure alone. `blinc_ms`: `rebuild_ms - build_ms` (Blinc's tree, style and layout together; Blinc does not time them apart). `cards_ms`, `cards_n`: time and number of the cards really created in this frame (0: reused). `stateful_n`: dropdowns and tooltips constructed in this frame.
 
 Without `FS_FRAME_LOG` the program does nothing extra. The same variable works in every program that opens its window with `fs-components-app`.
 
@@ -31,11 +32,12 @@ Wenn sich das Fenster beim Groessenaendern traege anfuehlt.
 3. Uns `/tmp/x.csv` geben. Bitte dazu: Programmversion (`fs-packages --version`), Release- oder Debug-Build, Wayland oder X11, Bildschirm-Skalierung, wie viele Eintraege der Katalog zeigte.
 
 Die Datei ist ein einfaches CSV (Modus 0600), eine Zeile je Frame:
-`t_ms,kind,total_ms,check_ms,rebuild_ms,tick_ms,render_ms,chain_ms,width,height`
+`t_ms,kind,total_ms,check_ms,rebuild_ms,tick_ms,render_ms,chain_ms,width,height,build_ms,blinc_ms,cards_ms,cards_n,stateful_n`
 
 - `t_ms`: Millisekunden seit dem Oeffnen des Logs.
 - `kind`: `resize` (erster Frame nach Groessenaenderung), `rebuild` (anderer Frame mit Neuaufbau des Baums), `redraw`.
 - `total_ms`: ganzer Frame. `check_ms`: braucht der Baum einen Neuaufbau. `rebuild_ms`: unser Aufbau, Baum, Stil, Layout. `tick_ms`: Animationen. `render_ms`: Malen auf der GPU. `chain_ms`: was nach dem Malen folgt. (Blinc misst Layout und Swapchain-Present nicht einzeln.)
 - `width`, `height`: Fenstergroesse in logischen Pixeln.
+- `build_ms`: nur unser Aufbau. `blinc_ms`: `rebuild_ms - build_ms` (Blincs Baum, Stil und Layout zusammen; Blinc misst sie nicht einzeln). `cards_ms`, `cards_n`: Zeit und Anzahl der in diesem Frame wirklich erzeugten Karten (0: wiederverwendet). `stateful_n`: in diesem Frame gebaute Dropdowns und Tooltips.
 
 Ohne `FS_FRAME_LOG` tut das Programm nichts zusaetzlich. Dieselbe Variable gilt in jedem Programm, dessen Fenster ueber `fs-components-app` laeuft.
