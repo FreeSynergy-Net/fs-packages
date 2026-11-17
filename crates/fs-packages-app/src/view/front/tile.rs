@@ -214,6 +214,16 @@ fn running(card: &Card, shared: &Shared, share: f32, line: &str, width: f32) -> 
         )
 }
 
+/// The row of badges under the name: the state badge, then the pre-release badge when the offered release is one.
+fn badge_row(state_badge: Div, card: &Card) -> Div {
+    div()
+        .flex_row()
+        .flex_wrap()
+        .gap(2.0)
+        .child(state_badge)
+        .children(prerelease_badge(card))
+}
+
 /// The tile of `card`, `number` in the list, `width` pixels wide.
 pub(super) fn tile(
     card: &Card,
@@ -230,8 +240,7 @@ pub(super) fn tile(
         Some(_) => badge(card.working_word(), BadgeTone::Info),
         None => badge(card.state_word(), state_tone(card.state)),
     };
-    let badges = div().flex_row().flex_wrap().gap(2.0).child(state_badge);
-    body = body.child(badges.children(prerelease_badge(card)));
+    body = body.child(badge_row(state_badge, card));
     body = body.child(
         div()
             .flex_col()
@@ -259,4 +268,21 @@ pub(super) fn tile(
         tile_head(number, accent(&card.name), links(card, shared, launcher)),
         body,
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use fs_components::blinc::layout::ElementBuilder;
+    use fs_components::blinc::layout::div::div;
+
+    use super::badge_row;
+    use crate::view::card::tests::demo_card;
+
+    #[test]
+    fn the_tile_shows_the_prerelease_badge_next_to_the_state_badge_only_for_a_prerelease() {
+        let dev = demo_card("fs-people");
+        assert_eq!(badge_row(div(), &dev).children_builders().len(), 2);
+        let stable = demo_card("kanidm");
+        assert_eq!(badge_row(div(), &stable).children_builders().len(), 1);
+    }
 }

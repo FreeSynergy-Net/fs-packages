@@ -16,6 +16,14 @@ pub(crate) fn registered_source(root: &Path, name: &str) -> Option<String> {
     registry(root).ok()?.get(name).map(|e| e.source.clone())
 }
 
+/// Whether the installed release of `name` is a pre-release (a package without the note counts as stable).
+pub(crate) fn installed_prerelease(root: &Path, name: &str) -> bool {
+    registry(root)
+        .ok()
+        .and_then(|r| r.get(name).map(|e| e.prerelease))
+        .unwrap_or(false)
+}
+
 /// Updates every installed package that has automatic updates on, each from its own source, as ONE batch:
 /// downloads at the same time, one install step (one password for all rpm). A failing package does not stop the others.
 pub(crate) fn update_all(root: &Path, extra: Option<&String>) -> Result<(), String> {
@@ -78,6 +86,7 @@ fn bin_dir() -> std::path::PathBuf {
 pub(crate) fn check(root: &Path, extra: Option<&String>) -> Result<(), String> {
     let (verifier, policy) = trust(extra)?;
     let mut newer = 0;
+    let lang = fs_packages_core::language::from_environment();
     for e in registry(root)?.list() {
         let Some(have) = fs_packages_core::Version::parse(&e.version) else {
             continue;
@@ -87,12 +96,10 @@ pub(crate) fn check(root: &Path, extra: Option<&String>) -> Result<(), String> {
             .map(|cat| cat.entries.into_iter().find(|o| o.name.as_str() == e.name));
         match offered {
             Ok(Some(o)) if o.version > have && o.installable() => {
-                let mark = if o.details.prerelease {
-                    format!(" ({})", crate::prerelease::prerelease_label())
-                } else {
-                    String::new()
-                };
-                println!("{} {} -> {}{mark}", e.name, have, o.version);
+                println!(
+                    "{}",
+                    crate::prerelease::check_line(&e.name, &have, &o, &lang)
+                );
                 newer += 1;
             }
             Ok(_) => {}
