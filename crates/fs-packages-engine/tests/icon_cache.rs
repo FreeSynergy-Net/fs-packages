@@ -162,6 +162,22 @@ fn a_hash_that_is_no_hash_names_no_file() {
     assert!(fetch_into_cache(tmp.path(), &fetch, "https://e.org/a.png", "../../x").is_err());
     assert!(cached_icon(tmp.path(), "../../x").is_none());
     assert!(cached_icon(tmp.path(), "").is_none());
+    // a file that exists under that name is still not an answer: only a real hash names a file
+    let dir = tmp.path().join("icons");
+    fs::create_dir_all(&dir).unwrap();
+    fs::write(dir.join("abc.png"), png(b"x")).unwrap();
+    fs::write(dir.join(format!("{}.png", "g".repeat(64))), png(b"x")).unwrap();
+    assert!(cached_icon(tmp.path(), "abc").is_none());
+    assert!(cached_icon(tmp.path(), &"g".repeat(64)).is_none());
+}
+
+#[test]
+fn the_real_download_refuses_http_before_any_connection() {
+    // port 1 is closed: without the https check the answer would be a connection error, not this text
+    let err = fs_packages_engine::net::IconFetch
+        .get("http://127.0.0.1:1/a.png")
+        .unwrap_err();
+    assert!(err.contains("only https"), "{err}");
 }
 
 #[test]
