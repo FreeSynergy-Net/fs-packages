@@ -78,3 +78,51 @@ fn the_log_stays_within_64_kb_after_the_started_program_and_the_launcher_are_gon
         0o600
     );
 }
+
+#[test]
+fn the_last_line_after_a_burst_reaches_the_file_while_the_output_is_quiet() {
+    use std::process::{Command, Stdio};
+    let dir = Path::new(env!("CARGO_TARGET_TMPDIR")).join("launch-real-pump-quiet");
+    let _ = fs::remove_dir_all(&dir);
+    fs::create_dir_all(&dir).unwrap();
+    for trial in 0..5 {
+        let log = dir.join(format!("quiet-{trial}.log"));
+        fs::write(&log, "").unwrap();
+        fs::set_permissions(&log, fs::Permissions::from_mode(0o600)).unwrap();
+        let mut pump = Command::new(env!("CARGO_BIN_EXE_fs-packages"))
+            .arg("log-pump")
+            .arg(&log)
+            .stdin(Stdio::piped())
+            .spawn()
+            .unwrap();
+        let mut input = pump.stdin.take().unwrap();
+        input.write_all(&vec![b'a'; LOG_MAX]).unwrap();
+        std::thread::sleep(Duration::from_millis(200));
+        input.write_all(&vec![b'b'; 20_000]).unwrap(); // full log, over 16 KB: written at once
+        std::thread::sleep(Duration::from_millis(5));
+        let line = format!("LAST-{trial}\n");
+        input.write_all(line.as_bytes()).unwrap(); // then silence, the pipe stays open
+        let start = Instant::now();
+        let seen = wait_until_for(Duration::from_millis(300), || {
+            fs::read(&log).is_ok_and(|b| b.ends_with(line.as_bytes()))
+        });
+        assert!(
+            seen,
+            "trial {trial}: the last line was not in the file {:?} after the burst",
+            start.elapsed()
+        );
+        drop(input);
+        pump.wait().unwrap();
+    }
+}
+
+fn wait_until_for(limit: Duration, mut what: impl FnMut() -> bool) -> bool {
+    let end = Instant::now() + limit;
+    while Instant::now() < end {
+        if what() {
+            return true;
+        }
+        std::thread::sleep(Duration::from_millis(10));
+    }
+    what()
+}

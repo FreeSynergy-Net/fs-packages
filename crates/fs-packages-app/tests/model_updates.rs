@@ -254,3 +254,19 @@ fn last_check_wording() {
     assert_eq!(format_time(0), "1970-01-01 00:00 UTC");
     assert_eq!(format_time(1_794_000_000), "2026-11-06 21:20 UTC");
 }
+
+#[test]
+fn the_new_mark_changes_the_kept_cards() {
+    // The cards are kept between draws: the mark "new" is part of what they are made of, in both directions.
+    let svc = service(findings(), 2_000);
+    let mut m = model_with(&svc);
+    assert!(m.cards().iter().all(|c| !c.is_new));
+    m.show(View::Cards);
+    assert!(m.cards().iter().any(|c| c.name == "fs-theme" && c.is_new));
+    m.show(View::Sources);
+    m.show(View::Cards);
+    assert!(
+        m.cards().iter().all(|c| !c.is_new),
+        "mark gone: cards computed again"
+    );
+}

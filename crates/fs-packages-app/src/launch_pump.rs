@@ -184,7 +184,8 @@ fn wait_on_stdin(limit: Duration) {
         events: libc::POLLIN,
         revents: 0,
     };
-    let ms = i32::try_from(limit.as_millis()).unwrap_or(i32::MAX);
+    // Rounded UP: a poll that ends a little early leaves `since.elapsed()` below the waiting time and the read would block until the next output.
+    let ms = i32::try_from(limit.as_micros().div_ceil(1000).max(1)).unwrap_or(i32::MAX);
     // SAFETY: one valid pollfd, count 1; a failure or an interrupt only ends the wait early.
     unsafe { libc::poll(&raw mut fd, 1, ms) };
 }
