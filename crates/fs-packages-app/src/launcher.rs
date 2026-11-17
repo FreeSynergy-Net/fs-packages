@@ -1,14 +1,15 @@
 //! Pattern: Strategy / Port (starting another program sits behind a trait, so the model is tested with a fake).
 
 use std::path::{Path, PathBuf};
-use std::process::{Child, Command, Stdio};
+use std::process::{Command, Stdio};
 use std::sync::Arc;
 use std::time::Duration;
 
 use crate::launch_life::{SignProbe, system_probe};
-use crate::launch_log::{create_private_dir, log_file, open_fresh, state_dir};
-use crate::launch_pump::PUMP_ARG;
+use crate::launch_log::{log_file, state_dir};
 use crate::launch_watch::{HANG_AFTER, LaunchReport, OBSERVE, Reports, Running, Watch, watch};
+
+mod pipe;
 
 /// Starts programs as processes of their own.
 pub trait Launcher: Send + Sync {
@@ -125,57 +126,6 @@ impl ProcessLauncher {
         self
     }
 
-    /// Makes the log of `command` and the pipe into it. Returns the log, the two ends the program writes to and the pump. When the log or
-    /// the pump cannot be made, the cause is queued as a report (never silent) and the program gets nothing attached.
-    fn open_log(&self, command: &str) -> Logged {
-        match self.make_log(command) {
-            Ok((path, out, err, pump)) => (Some(path), out.into(), err.into(), Some(pump)),
-            Err(cause) => {
-                self.reports.push(LaunchReport::LogUnwritable {
-                    command: command.to_owned(),
-                    cause,
-                });
-                if let Some(redraw) = &self.redraw {
-                    redraw();
-                }
-                (None, Stdio::null(), Stdio::null(), None)
-            }
-        }
-    }
-
-    fn make_log(&self, command: &str) -> Result<Made, String> {
-        let dir = self
-            .state
-            .as_ref()
-            .ok_or_else(|| "no home folder (HOME is not set)".to_owned())?;
-        create_private_dir(dir).map_err(|e| format!("{}: {e}", dir.display()))?;
-        let path = log_file(dir, command);
-        let at = |e: std::io::Error| format!("{}: {e}", path.display());
-        // Made and wiped here (without following a link); the pump fills it.
-        drop(open_fresh(&path).map_err(at)?);
-        let exe = self
-            .pump
-            .as_ref()
-            .ok_or_else(|| "the log pump (this program) was not found".to_owned())?;
-        let (reader, writer) = std::io::pipe().map_err(at)?;
-        let mut pump = Command::new(exe);
-        pump.arg(PUMP_ARG)
-            .arg(&path)
-            .stdin(reader)
-            .stdout(Stdio::null())
-            .stderr(Stdio::null());
-        #[cfg(unix)]
-        {
-            use std::os::unix::process::CommandExt;
-            pump.process_group(0);
-        }
-        let pump = pump
-            .spawn()
-            .map_err(|e| format!("log pump {}: {e}", exe.display()))?;
-        let err = writer.try_clone().map_err(at)?;
-        Ok((path, writer, err, pump))
-    }
-
     fn find(&self, command: &str) -> Option<PathBuf> {
         let path = std::env::var_os("PATH").unwrap_or_default();
         std::env::split_paths(&path)
@@ -184,11 +134,6 @@ impl ProcessLauncher {
             .find(|p| is_file(p))
     }
 }
-
-/// The log, the output ends of the program and the pump.
-type Logged = (Option<PathBuf>, Stdio, Stdio, Option<Child>);
-/// The log, the two ends of the pipe into the pump and the pump.
-type Made = (PathBuf, std::io::PipeWriter, std::io::PipeWriter, Child);
 
 /// This program as the log pump. After an update of the store the running file may have been replaced: Linux then says `... (deleted)`,
 /// and the file at the same path is the newer version of this program, which knows the pump as well.
