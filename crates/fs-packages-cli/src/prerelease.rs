@@ -1,4 +1,4 @@
-//! The pre-release mark in the command line: `available` and `check` append the word in the language of the person.
+//! Pattern: Strategy (the word follows the language). The pre-release mark in the command line: `available` and `check` append the word in the language of the person.
 
 /// The word that marks a pre-release in the language of the person (`FS_LANG`, else `LANG`): `Vorabversion` for German, else `pre-release`.
 fn prerelease_word(lang: &str) -> &'static str {
