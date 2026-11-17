@@ -118,8 +118,27 @@ pub(super) fn logo_plain(card: &Card, side: f32) -> Div {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use fs_components_widgets::craft::BadgeTone;
+
+    use crate::model::{Card, StoreModel};
+
+    /// A card of the demo store (`fs-people` is a pre-release, `kanidm` is stable).
+    pub(crate) fn demo_card(name: &str) -> Card {
+        let p = crate::demo::parts(true);
+        let mut m = StoreModel::new(p.backend).with_updates(p.updates);
+        m.refresh();
+        m.cards().into_iter().find(|c| c.name == name).unwrap()
+    }
+
+    /// A pre-release card has the badge, a stable one has none (the badge of tile and page both come from here).
+    #[test]
+    fn the_badge_exists_for_a_prerelease_and_not_for_a_stable_release() {
+        assert!(super::prerelease_badge(&demo_card("fs-people")).is_some());
+        assert!(super::prerelease_badge(&demo_card("kanidm")).is_none());
+        assert!(super::prerelease_note(&demo_card("fs-people")).is_some());
+        assert!(super::prerelease_note(&demo_card("kanidm")).is_none());
+    }
 
     /// The pre-release badge is neutral, not the amber of "update available".
     #[test]

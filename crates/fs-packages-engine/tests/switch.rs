@@ -62,6 +62,7 @@ fn entry(version: &str) -> Installed {
         source: "src".to_owned(),
         auto_update: false,
         facets: vec!["contacts".to_owned()],
+        prerelease: false,
     }
 }
 

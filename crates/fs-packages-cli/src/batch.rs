@@ -114,6 +114,24 @@ pub(crate) fn install_batch(
             );
             continue;
         }
+        let lang = fs_packages_core::language::from_environment();
+        match crate::prerelease::outcome_prerelease(
+            name,
+            crate::updates::installed_prerelease(root, name),
+            hit.entry.details.prerelease,
+            sweep && only_newer,
+            &lang,
+        ) {
+            Outcome::Proceed => {}
+            Outcome::Skip(note) => {
+                println!("{note}");
+                continue;
+            }
+            Outcome::Fail(why) => {
+                problems.push(why);
+                continue;
+            }
+        }
         found.push(hit);
     }
     problems.extend(run_batch(root, &installer, found));
@@ -249,6 +267,7 @@ fn finish(root: &Path, f: &Found, v: fs_packages_core::Version, signer: &str) ->
     match fs_packages_sources::Registry::load(&root.join("installed.toml")) {
         Ok(mut registry) => {
             registry.record(&f.name, &v.to_string(), &f.url);
+            registry.set_prerelease(&f.name, f.entry.details.prerelease);
             registry.set_facets(&f.name, settled.made);
             if let Err(e) = registry.save() {
                 problems.push(format!(
