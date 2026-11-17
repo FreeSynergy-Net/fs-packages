@@ -1,5 +1,14 @@
-use fs_packages_catalog::{Skipped, parse_catalog};
+use fs_packages_catalog::Skipped;
 use fs_packages_core::{Format, Kind, Version};
+
+/// The test data names its artifacts `x86_64-linux-gnu`; the catalog offers only the system it runs on, so the data is read
+/// for the architecture and system of this run (on Linux x86_64 nothing changes).
+fn parse_catalog(
+    xml: &str,
+) -> Result<fs_packages_catalog::Catalog, fs_packages_catalog::CatalogError> {
+    let host = format!("{}-{}-gnu", std::env::consts::ARCH, std::env::consts::OS);
+    fs_packages_catalog::parse_catalog(&xml.replace("x86_64-linux-gnu", &host))
+}
 
 const XML: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
 <components version="1.0" origin="freesynergy">
@@ -197,6 +206,10 @@ fn deb_and_exe_artifacts_are_collected_by_platform_and_never_become_the_primary_
 }
 
 #[test]
+#[cfg_attr(
+    not(unix),
+    ignore = "a Linux artifact (x86_64-linux-gnu) is not offered on Windows: the catalog offers only the system it runs on"
+)]
 fn a_windows_file_is_not_offered_on_linux() {
     let xml = r#"<components version="1.0"><component><id>t</id><releases><release version="1.0.0"><artifacts>
  <artifact type="binary" platform="x86_64-linux-gnu"><location>tgz</location><checksum type="sha256">1</checksum></artifact>

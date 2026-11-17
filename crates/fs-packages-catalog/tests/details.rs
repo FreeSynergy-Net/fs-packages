@@ -1,6 +1,13 @@
 //! Tests of the package details read from the catalog (ADR 0068).
 
-use fs_packages_catalog::parse_catalog;
+/// The test data names its artifacts `x86_64-linux-gnu`; the catalog offers only the system it runs on, so the data is read
+/// for the architecture and system of this run (on Linux x86_64 nothing changes).
+fn parse_catalog(
+    xml: &str,
+) -> Result<fs_packages_catalog::Catalog, fs_packages_catalog::CatalogError> {
+    let host = format!("{}-{}-gnu", std::env::consts::ARCH, std::env::consts::OS);
+    fs_packages_catalog::parse_catalog(&xml.replace("x86_64-linux-gnu", &host))
+}
 
 const XML: &str = r#"<components version="1.0"><component type="desktop-application"><id>net.freesynergy.plain</id>
 <releases><release version="0.8.0"><artifacts><artifact type="binary"><location>https://example.org/p.tar.gz</location>

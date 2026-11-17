@@ -1,0 +1,2 @@
+# Test data that is compared byte for byte (sizes, hashes of signed metadata) must not get CRLF on Windows.
+crates/fs-packages-tuf/tests/data/** -text
