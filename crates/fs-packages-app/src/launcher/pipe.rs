@@ -1,4 +1,5 @@
-//! The pipe from a started program into its log pump: the log file, the pipe and the pump process (a part of [`super::ProcessLauncher`]).
+//! Pattern: Pipe and filter (the pipe from a started program into its log pump: the log file, the pipe and the pump process; a part of
+//! [`super::ProcessLauncher`]).
 
 use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
