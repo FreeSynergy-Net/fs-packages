@@ -18,6 +18,7 @@ pub mod net;
 mod own_files;
 mod own_judge;
 mod owner;
+mod platform;
 mod prepare;
 mod proc;
 mod remove;

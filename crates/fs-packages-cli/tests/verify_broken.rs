@@ -1,3 +1,4 @@
+#![cfg(unix)] // symbolic links, modes and processes of Unix: Windows port open
 //! `fs-packages verify <package>` does not call a broken list of files "intact": only "no list" is let through (an rpm).
 //! One test, because the commands read the store folder from the environment.
 

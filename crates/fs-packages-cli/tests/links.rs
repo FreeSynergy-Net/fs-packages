@@ -1,3 +1,4 @@
+#![cfg(unix)] // symbolic links, modes and processes of Unix: Windows port open
 //! `fs-packages verify` names a command that starts another version than `installed.toml` says (exit not zero, with the
 //! repair), and `fs-packages relink` repairs it. One test, because the commands read the folders from the environment.
 

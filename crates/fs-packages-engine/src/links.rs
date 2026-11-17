@@ -3,8 +3,9 @@
 
 use std::fs;
 use std::io;
-use std::os::unix::fs::{PermissionsExt, symlink};
 use std::path::Path;
+
+use crate::platform::{is_executable, symlink};
 
 /// Where the commands of installed programs are linked: `FS_PACKAGES_BIN`, else `~/.local/bin`.
 #[must_use]
@@ -46,11 +47,7 @@ pub fn link_programs(
         let meta = fs::metadata(entry.path())?;
         // `<name>-app` and `<name>-server` are reached through the one command `<name>` (see `link_facets`)
         let plain = file == format!("{name}-app") || file == format!("{name}-server");
-        if !meta.is_file()
-            || meta.permissions().mode() & 0o111 == 0
-            || file.starts_with('.')
-            || plain
-        {
+        if !meta.is_file() || !is_executable(&meta) || file.starts_with('.') || plain {
             continue;
         }
         let link = bin_dir.join(&file);

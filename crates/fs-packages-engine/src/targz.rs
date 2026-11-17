@@ -106,7 +106,7 @@ impl TarGz {
         fs::create_dir_all(&cur)?;
         let tmp = cur.join(format!(".{name}.new.{}", std::process::id()));
         let _ = fs::remove_file(&tmp);
-        std::os::unix::fs::symlink(target, &tmp)?;
+        crate::platform::symlink(target, &tmp)?;
         fs::rename(&tmp, cur.join(name))
     }
 

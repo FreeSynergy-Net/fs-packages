@@ -1,3 +1,4 @@
+#![cfg(unix)] // symbolic links, modes and processes of Unix: Windows port open
 //! The follow-up of an install and of a removal says every problem and does the same in the window and the commands.
 
 mod common;

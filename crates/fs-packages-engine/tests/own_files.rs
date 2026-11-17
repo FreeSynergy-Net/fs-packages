@@ -1,3 +1,4 @@
+#![cfg(unix)] // symbolic links, modes and processes of Unix: Windows port open
 //! The store's own list of files: written at install, checked by `verify`, asked by `owner`, made afterwards for old installs.
 
 mod common;

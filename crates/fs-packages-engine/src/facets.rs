@@ -4,8 +4,9 @@
 
 use std::fs;
 use std::io;
-use std::os::unix::fs::symlink;
 use std::path::{Path, PathBuf};
+
+use crate::platform::symlink;
 
 /// Where the program of a package lives: in the unpacked package (`tar.gz`, no root), or where the package manager
 /// put it (`rpm`, `deb`: usually `/usr/bin`). A facet link follows the form that is active, never the other one.

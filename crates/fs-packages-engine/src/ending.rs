@@ -69,7 +69,7 @@ pub(crate) fn end_old_servers(
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, unix))]
 mod tests {
     use std::os::unix::process::CommandExt;
     use std::process::Command;

@@ -1,3 +1,4 @@
+#![cfg(unix)] // symbolic links, modes and processes of Unix: Windows port open
 #![allow(clippy::assert_is_empty)]
 use std::fs;
 use std::os::unix::process::CommandExt;

@@ -25,8 +25,15 @@ fn main() -> ExitCode {
 /// True when this process runs as root. The store works in the person's own folders and asks for root itself (`pkexec`)
 /// only for an rpm; started as root it would read and write `/root/.local/share/fs-packages`, a second, different store.
 fn is_root() -> bool {
-    use std::os::unix::fs::MetadataExt;
-    std::fs::metadata("/proc/self").is_ok_and(|m| m.uid() == 0)
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+        std::fs::metadata("/proc/self").is_ok_and(|m| m.uid() == 0)
+    }
+    #[cfg(not(unix))]
+    {
+        false
+    }
 }
 
 fn dispatch(args: &[String]) -> Result<(), String> {

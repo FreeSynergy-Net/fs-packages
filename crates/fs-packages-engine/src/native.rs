@@ -4,7 +4,6 @@
 
 use std::fs;
 use std::io::Write;
-use std::os::unix::fs::OpenOptionsExt;
 use std::path::{Path, PathBuf};
 
 /// Writes `files` below `dir` (created with mode 0700) as `<name>-<version>-<pid>-<n>.<ext>`: names nobody can guess,
@@ -19,22 +18,18 @@ pub(crate) fn write_private(
     let mut paths = Vec::new();
     // Absolute, so the package manager reads a path (a name with a `/` is a file to apt) and no relative root confuses it.
     let dir = &std::path::absolute(dir).unwrap_or_else(|_| dir.to_owned());
-    let prepared = fs::create_dir_all(dir).and_then(|()| {
-        fs::set_permissions(dir, std::os::unix::fs::PermissionsExt::from_mode(0o700))
-    });
+    let prepared = fs::create_dir_all(dir).and_then(|()| crate::platform::make_private_dir(dir));
     if let Err(e) = prepared {
         return (paths, Err(e.to_string()));
     }
     for (n, bytes) in files.iter().enumerate() {
         let file = dir.join(format!("{stem}-{}-{n}.{ext}", std::process::id()));
         let _ = fs::remove_file(&file);
-        let one = fs::OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .mode(0o600)
-            .custom_flags(0x2_0000) // O_NOFOLLOW
-            .open(&file)
-            .and_then(|mut f| f.write_all(bytes));
+        let one = crate::platform::private_file_options(
+            fs::OpenOptions::new().write(true).create_new(true),
+        )
+        .open(&file)
+        .and_then(|mut f| f.write_all(bytes));
         paths.push(file);
         if let Err(e) = one {
             return (paths, Err(e.to_string()));

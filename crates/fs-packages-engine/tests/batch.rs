@@ -212,6 +212,7 @@ fn all_rpm_of_a_batch_go_to_one_pkexec_call() {
     assert_eq!(seen[0].iter().filter(|a| a.ends_with(".rpm")).count(), 3);
 }
 
+#[cfg(unix)] // Windows port open
 #[test]
 fn a_background_server_does_not_block_the_update() {
     use std::os::unix::process::CommandExt;

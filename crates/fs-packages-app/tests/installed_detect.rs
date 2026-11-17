@@ -1,3 +1,4 @@
+#![cfg(unix)] // symbolic links, modes and processes of Unix: Windows port open
 //! Tests of the detection of installed packages: register, `current/` links and rpm together.
 
 use std::fs;

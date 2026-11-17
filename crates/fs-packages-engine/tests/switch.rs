@@ -1,3 +1,4 @@
+#![cfg(unix)] // symbolic links, modes and processes of Unix: Windows port open
 //! A package that was unpacked by the store and becomes an rpm: the commands follow the active form, what the store
 //! unpacked is taken away (only that), and `check_links` sees a command that starts another version than the register.
 

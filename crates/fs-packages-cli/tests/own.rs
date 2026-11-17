@@ -1,3 +1,4 @@
+#![cfg(unix)] // symbolic links, modes and processes of Unix: Windows port open
 //! `fs-packages verify` and `fs-packages owner` through the real command entry: exit codes and the migration of an old install.
 //! One test, because the commands read the store folder from the environment.
 
