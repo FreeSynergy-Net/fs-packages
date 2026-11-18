@@ -67,14 +67,15 @@ mod tests {
     }
 
     #[test]
-    fn a_link_at_the_path_is_not_followed() {
+    fn a_stale_link_at_the_path_is_replaced_not_written_through() {
         let tmp = tempfile::tempdir().unwrap();
         let (paths, _) = write_private(tmp.path(), "p", "rpm", &[vec![1]]);
         let foreign = tmp.path().join("foreign");
         fs::write(&foreign, b"keep").unwrap();
         let _ = fs::remove_file(&paths[0]);
         std::os::unix::fs::symlink(&foreign, &paths[0]).unwrap();
-        // The next write removes the link first and creates a new file: the foreign file stays as it is.
+        // The next write removes the link first and creates a new file: the foreign file stays as it is. (This is the
+        // `remove_file` before `create_new`; that `O_NOFOLLOW` itself holds is tested in `platform::tests_unix`.)
         let (_, result) = write_private(tmp.path(), "p", "rpm", &[vec![9]]);
         assert_eq!(result, Ok(()));
         assert_eq!(fs::read(&foreign).unwrap(), b"keep");

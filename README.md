@@ -36,3 +36,30 @@ The commands of a program and its facets (`~/.local/bin/<name>`) follow the form
 `installed.toml` says (exit code not zero, with the repair); `fs-packages relink [name]` makes the commands again for the active form.
 
 License: MIT OR Apache-2.0.
+
+## Windows: test files that do not run there (not visible in the Windows log)
+
+These 18 test files start with `#![cfg(unix)]`. On Windows they are not compiled, so the Windows log shows neither `ok` nor `ignored` for them: the Windows port is open (symbolic links, modes, processes). Tests that are only `ignored` on Windows are listed with their reason in the log and in CHANGELOG.md. The wanted Windows outcome of an install (`unsupported-on-windows{symlink}` / `{private-dir}`, nothing left behind) is checked by [`crates/fs-packages-engine/tests/windows_unsupported.rs`](crates/fs-packages-engine/tests/windows_unsupported.rs), which runs on Windows only.
+
+## Windows: Testdateien, die dort nicht laufen (im Windows-Log nicht sichtbar)
+
+Diese 18 Testdateien beginnen mit `#![cfg(unix)]`. Unter Windows werden sie nicht übersetzt, das Windows-Log zeigt dafür weder `ok` noch `ignored`: der Windows-Port ist offen (Symlinks, Modi, Prozesse). Tests, die unter Windows nur `ignored` sind, stehen mit Grund im Log und im CHANGELOG.md. Das gewollte Windows-Ergebnis einer Installation (`unsupported-on-windows{symlink}` / `{private-dir}`, nichts bleibt zurück) prüft [`crates/fs-packages-engine/tests/windows_unsupported.rs`](crates/fs-packages-engine/tests/windows_unsupported.rs), nur unter Windows.
+
+- [`crates/fs-packages-app/tests/installed_detect.rs`](crates/fs-packages-app/tests/installed_detect.rs)
+- [`crates/fs-packages-app/tests/launch_hang.rs`](crates/fs-packages-app/tests/launch_hang.rs)
+- [`crates/fs-packages-app/tests/launch_log.rs`](crates/fs-packages-app/tests/launch_log.rs)
+- [`crates/fs-packages-app/tests/launch_pump.rs`](crates/fs-packages-app/tests/launch_pump.rs)
+- [`crates/fs-packages-app/tests/launch_spawn_fail.rs`](crates/fs-packages-app/tests/launch_spawn_fail.rs)
+- [`crates/fs-packages-app/tests/launch_symlink.rs`](crates/fs-packages-app/tests/launch_symlink.rs)
+- [`crates/fs-packages-cli/tests/links.rs`](crates/fs-packages-cli/tests/links.rs)
+- [`crates/fs-packages-cli/tests/own.rs`](crates/fs-packages-cli/tests/own.rs)
+- [`crates/fs-packages-cli/tests/verify_broken.rs`](crates/fs-packages-cli/tests/verify_broken.rs)
+- [`crates/fs-packages-engine/tests/after.rs`](crates/fs-packages-engine/tests/after.rs)
+- [`crates/fs-packages-engine/tests/cancel_more.rs`](crates/fs-packages-engine/tests/cancel_more.rs)
+- [`crates/fs-packages-engine/tests/end_server.rs`](crates/fs-packages-engine/tests/end_server.rs)
+- [`crates/fs-packages-engine/tests/facets.rs`](crates/fs-packages-engine/tests/facets.rs)
+- [`crates/fs-packages-engine/tests/links.rs`](crates/fs-packages-engine/tests/links.rs)
+- [`crates/fs-packages-engine/tests/own_files.rs`](crates/fs-packages-engine/tests/own_files.rs)
+- [`crates/fs-packages-engine/tests/servers.rs`](crates/fs-packages-engine/tests/servers.rs)
+- [`crates/fs-packages-engine/tests/switch.rs`](crates/fs-packages-engine/tests/switch.rs)
+- [`crates/fs-packages-tuf-publish/tests/publish.rs`](crates/fs-packages-tuf-publish/tests/publish.rs)

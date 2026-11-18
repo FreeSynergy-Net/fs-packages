@@ -222,6 +222,28 @@ fn a_windows_file_is_not_offered_on_linux() {
 }
 
 #[test]
+fn a_file_of_another_system_is_not_offered_and_one_of_this_system_is() {
+    // On Windows the foreign file is the Linux one (mirror of the test above), on Linux the Windows one.
+    let os = std::env::consts::OS;
+    let arch = std::env::consts::ARCH;
+    let foreign = if os == "windows" {
+        "x86_64-linux-gnu"
+    } else {
+        "x86_64-windows-msvc"
+    };
+    let xml = format!(
+        r#"<components version="1.0"><component><id>t</id><releases><release version="1.0.0"><artifacts>
+ <artifact type="binary" platform="{arch}-{os}"><location>tgz</location><checksum type="sha256">1</checksum></artifact>
+ <artifact type="binary" platform="{foreign}" fs-format="deb" fs-signature="a.asc"><location>foreign.deb</location><checksum type="sha256">2</checksum></artifact>
+ <artifact type="binary" platform="{arch}-{os}" fs-format="deb" fs-signature="b.asc"><location>own.deb</location><checksum type="sha256">3</checksum></artifact>
+ </artifacts></release></releases><custom><value key="fs:signature">tgz.asc</value></custom></component></components>"#
+    );
+    let e = &parse_catalog(&xml).unwrap().entries[0];
+    let debs: Vec<_> = e.debs.iter().map(|r| r.location.as_str()).collect();
+    assert_eq!(debs, ["own.deb"]);
+}
+
+#[test]
 fn the_display_name_is_read_from_the_name_tag() {
     let xml = r#"<components version="1.0"><component><id>fs-a</id><name> FreeSynergy.A </name><releases><release version="1.0.0"><artifacts><artifact type="binary"><location>l</location><checksum type="sha256">1</checksum></artifact></artifacts></release></releases><custom><value key="fs:signature">s</value></custom></component></components>"#;
     assert_eq!(

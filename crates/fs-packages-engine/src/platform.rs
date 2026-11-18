@@ -119,3 +119,41 @@ mod tests {
         let _ = fs::remove_dir_all(&dir);
     }
 }
+
+#[cfg(all(test, unix))]
+mod tests_unix {
+    use std::io::Write;
+    use std::os::unix::fs::PermissionsExt;
+
+    use super::*;
+
+    #[test]
+    fn a_private_file_is_never_opened_through_a_link() {
+        let tmp = tempfile::tempdir().unwrap();
+        let foreign = tmp.path().join("foreign");
+        fs::write(&foreign, b"keep").unwrap();
+        let link = tmp.path().join("link");
+        std::os::unix::fs::symlink(&foreign, &link).unwrap();
+        // Without `create_new` (whose `O_EXCL` also refuses a link): only `O_NOFOLLOW` stops the open at the link.
+        let opened = private_file_options(fs::OpenOptions::new().write(true).truncate(true))
+            .unwrap()
+            .open(&link);
+        assert!(opened.is_err(), "the link was followed");
+        assert_eq!(fs::read(&foreign).unwrap(), b"keep");
+    }
+
+    #[test]
+    fn a_private_file_is_made_with_mode_0600_and_written_through_the_options() {
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join("p");
+        let mut f = private_file_options(fs::OpenOptions::new().write(true).create_new(true))
+            .unwrap()
+            .open(&path)
+            .unwrap();
+        f.write_all(b"x").unwrap();
+        assert_eq!(
+            fs::metadata(&path).unwrap().permissions().mode() & 0o777,
+            0o600
+        );
+    }
+}
