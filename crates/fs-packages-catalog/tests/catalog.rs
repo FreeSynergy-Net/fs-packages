@@ -238,7 +238,9 @@ fn a_file_of_another_system_is_not_offered_and_one_of_this_system_is() {
  <artifact type="binary" platform="{arch}-{os}" fs-format="deb" fs-signature="b.asc"><location>own.deb</location><checksum type="sha256">3</checksum></artifact>
  </artifacts></release></releases><custom><value key="fs:signature">tgz.asc</value></custom></component></components>"#
     );
-    let e = &parse_catalog(&xml).unwrap().entries[0];
+    // The real `parse_catalog`, NOT the shim above: the shim turns every `x86_64-linux-gnu` into this machine, which on
+    // Windows would make the foreign Linux file a file of this system (the false assumption of the first version).
+    let e = &fs_packages_catalog::parse_catalog(&xml).unwrap().entries[0];
     let debs: Vec<_> = e.debs.iter().map(|r| r.location.as_str()).collect();
     assert_eq!(debs, ["own.deb"]);
 }
