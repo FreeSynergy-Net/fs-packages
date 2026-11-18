@@ -30,12 +30,12 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends pkg-config libxkbcommon-dev libwayland-dev libfontconfig1-dev libssl-dev
-      - uses: FreeSynergy/fs-release/actions/setup-rust@v0.0.10
+      - uses: FreeSynergy/fs-release/actions/setup-rust@v0.0.11
         with:
           cache-key: typing-test
       - name: Build the store (release)
         run: cargo build --release -p fs-packages
-      - uses: FreeSynergy/fs-release/actions/typing-test@v0.0.10
+      - uses: FreeSynergy/fs-release/actions/typing-test@v0.0.11
         with:
           app-binary: target/release/fs-packages
           # `--look standard`: the typing test judges glyphs as dark ink on a light ground; the Craft look is light on dark and waits for
