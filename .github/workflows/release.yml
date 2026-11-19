@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   release:
-    uses: FreeSynergy/fs-release/.github/workflows/release.yml@v0.0.11
+    uses: FreeSynergy/fs-release/.github/workflows/release.yml@v0.0.15
     with:
       binaries: fs-packages
       cargo-package: fs-packages
