@@ -101,7 +101,7 @@ fn facets_follow_the_rpm_after_a_tar_install_and_the_old_files_go() {
     assert!(fs::symlink_metadata(s.bin.join("people-tool")).is_err());
     assert!(fs::symlink_metadata(s.root.join("current/people")).is_err());
     assert!(!s.root.join("packages/people").exists());
-    assert!(!s.root.join("manifests/people.toml").exists());
+    assert!(!s.root.join("manifests/people").exists());
     // the counter-test: what is not ours is untouched
     assert!(s.root.join("packages/other/1.0.0/f").is_file());
     assert_eq!(
@@ -122,7 +122,7 @@ fn a_file_of_somebody_else_in_the_old_folder_is_kept_and_said() {
     assert!(r.problems[0].contains("not ours"));
     assert_eq!(fs::read_to_string(&stranger).unwrap(), "mine");
     // the folder stays as it is (with the list), so nothing is lost and the next try finds the same state
-    assert!(s.root.join("manifests/people.toml").is_file());
+    assert!(s.root.join("manifests/people/0.0.2.toml").is_file());
 }
 
 #[test]

@@ -133,9 +133,12 @@ pub fn record_install(
         return Ok(false);
     }
     let manifest = make(root, name, version, source, signer, Basis::Installed)?;
-    ManifestStore::new(root)
+    let store = ManifestStore::new(root);
+    store
         .save(&manifest)
         .map_err(|e| format!("{name}: the list of files was not saved: {e:?}"))?;
+    // the list of the version before stays (it is the target of a fall-back); only lists of vanished versions go
+    crate::own_prune::prune_lists(root, name, version)?;
     Ok(true)
 }
 
@@ -177,7 +180,7 @@ impl Report {
     }
 }
 
-fn current_versions(root: &Path) -> Vec<(String, String)> {
+pub(crate) fn current_versions(root: &Path) -> Vec<(String, String)> {
     let Ok(dir) = fs::read_dir(root.join("current")) else {
         return Vec::new();
     };
@@ -206,8 +209,10 @@ pub fn adopt_missing(
     let store = ManifestStore::new(root);
     let mut made = Vec::new();
     for (name, version) in current_versions(root) {
-        let known = store.load(&name).map_err(|e| format!("{name}: {e:?}"))?;
-        if known.is_some_and(|m| m.version == version) {
+        let known = store
+            .load(&name, &version)
+            .map_err(|e| format!("{name}: {e:?}"))?;
+        if known.is_some() {
             continue;
         }
         let manifest = make(
@@ -248,20 +253,31 @@ pub fn verify(
     let made = adopt_missing(root, source_of)?;
     let store = ManifestStore::new(root);
     let mut reports = Vec::new();
+    let current = current_versions(root);
     for name in store.names().map_err(|e| format!("{e:?}"))? {
         if only.is_some_and(|o| o != name) {
             continue;
         }
-        let Some(manifest) = store.load(&name).map_err(|e| format!("{name}: {e:?}"))? else {
-            continue;
-        };
-        let dir = package_dir(root, &manifest.name, &manifest.version);
-        reports.push(Report {
-            files: check(root, &manifest),
-            made_now: made.contains(&name),
-            extra: stray(&dir, &manifest.files).unwrap_or_default(),
-            manifest,
-        });
+        // the active version when there is one; a package without a `current` link: every list it has
+        let active = current.iter().find(|(n, _)| *n == name).map(|(_, v)| v);
+        let versions = store
+            .versions(&name)
+            .map_err(|e| format!("{name}: {e:?}"))?;
+        for version in versions.iter().filter(|v| active.is_none_or(|a| a == *v)) {
+            let Some(manifest) = store
+                .load(&name, version)
+                .map_err(|e| format!("{name}: {e:?}"))?
+            else {
+                continue;
+            };
+            let dir = package_dir(root, &manifest.name, &manifest.version);
+            reports.push(Report {
+                files: check(root, &manifest),
+                made_now: made.contains(&name),
+                extra: stray(&dir, &manifest.files).unwrap_or_default(),
+                manifest,
+            });
+        }
     }
     if let Some(o) = only.filter(|_| reports.is_empty()) {
         return Err(format!("{o} is not installed by this store"));

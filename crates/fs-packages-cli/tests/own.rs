@@ -23,7 +23,7 @@ fn verify_fails_on_a_changed_file_and_owner_names_the_package() {
 
     // an old install without a list: the first verify makes one and is clean
     run(&["verify"]).unwrap();
-    assert!(root.join("manifests/prog.toml").is_file());
+    assert!(root.join("manifests/prog/1.0.0.toml").is_file());
     run(&[
         "owner",
         root.join("current/prog/bin/prog").to_str().unwrap(),

@@ -1,5 +1,6 @@
-//! Pattern: Repository (file-backed list of the files the store itself put on the disk, one TOML file per package under
-//! `<root>/manifests/`). It is the truth for "what WE installed": path, package, version, source, signer and a checksum
+//! Pattern: Repository (file-backed list of the files the store itself put on the disk, one TOML file per package AND version:
+//! `<root>/manifests/<name>/<version>.toml`, so the list of the previous version survives an update and can be checked for
+//! a fall-back). It is the truth for "what WE installed": path, package, version, source, signer and a checksum
 //! per file. The same on every system, because it does not ask rpm, dpkg or a registry.
 //!
 //! Schema (version 1) is chosen to become an AS2 `Add` activity later (draft `ENTWURF-files-kern.md` section 1.3):
@@ -58,7 +59,7 @@ pub struct Manifest {
     pub files: Vec<FileRecord>,
 }
 
-/// Where the lists are kept.
+/// Where the lists are kept: one file per version, `<root>/manifests/<name>/<version>.toml`.
 #[derive(Debug, Clone)]
 pub struct ManifestStore {
     dir: PathBuf,
@@ -77,9 +78,9 @@ impl ManifestStore {
         }
     }
 
-    fn file(&self, name: &str) -> Result<PathBuf, StoreError> {
+    fn folder(&self, name: &str) -> Result<PathBuf, StoreError> {
         if plain(name) {
-            Ok(self.dir.join(format!("{name}.toml")))
+            Ok(self.dir.join(name))
         } else {
             Err(StoreError::Format(format!(
                 "`{name}` is not a plain package name"
@@ -87,12 +88,22 @@ impl ManifestStore {
         }
     }
 
-    /// The list of `name`; `None` when there is none.
+    fn file(&self, name: &str, version: &str) -> Result<PathBuf, StoreError> {
+        if plain(version) {
+            Ok(self.folder(name)?.join(format!("{version}.toml")))
+        } else {
+            Err(StoreError::Format(format!(
+                "`{version}` is not a plain version"
+            )))
+        }
+    }
+
+    /// The list of `name` at `version`; `None` when there is none.
     ///
     /// # Errors
     /// `StoreError` when the file exists but cannot be read or parsed.
-    pub fn load(&self, name: &str) -> Result<Option<Manifest>, StoreError> {
-        match std::fs::read_to_string(self.file(name)?) {
+    pub fn load(&self, name: &str, version: &str) -> Result<Option<Manifest>, StoreError> {
+        match std::fs::read_to_string(self.file(name, version)?) {
             Ok(text) => toml::from_str(&text)
                 .map(Some)
                 .map_err(|e| StoreError::Format(e.to_string())),
@@ -111,9 +122,10 @@ impl ManifestStore {
         use std::io::Write;
         use std::sync::atomic::{AtomicU64, Ordering};
         static COUNTER: AtomicU64 = AtomicU64::new(0);
-        let path = self.file(&manifest.name)?;
+        let path = self.file(&manifest.name, &manifest.version)?;
+        let folder = self.folder(&manifest.name)?;
         let text = toml::to_string(manifest).map_err(|e| StoreError::Format(e.to_string()))?;
-        std::fs::create_dir_all(&self.dir).map_err(StoreError::Io)?;
+        std::fs::create_dir_all(&folder).map_err(StoreError::Io)?;
         let tmp = path.with_extension(format!(
             "toml.new.{}.{}",
             std::process::id(),
@@ -125,7 +137,7 @@ impl ManifestStore {
             file.sync_all()?;
             std::fs::rename(&tmp, &path)?;
             // the folder entry too (on systems where a folder can be opened)
-            if let Ok(dir) = std::fs::File::open(&self.dir) {
+            if let Ok(dir) = std::fs::File::open(&folder) {
                 let _ = dir.sync_all();
             }
             Ok(())
@@ -136,19 +148,74 @@ impl ManifestStore {
         written.map_err(StoreError::Io)
     }
 
-    /// Forgets the list of `name` (nothing to do when there is none).
+    /// Forgets the list of `name` at `version` and the folder of `name` when no list is left (nothing to do when there is none).
     ///
     /// # Errors
     /// `StoreError` when the file cannot be removed.
+    pub fn forget_version(&self, name: &str, version: &str) -> Result<(), StoreError> {
+        match std::fs::remove_file(self.file(name, version)?) {
+            Ok(()) => {}
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+            Err(e) => return Err(StoreError::Io(e)),
+        }
+        // not empty or already gone: the folder stays / nothing to do
+        let _ = std::fs::remove_dir(self.folder(name)?);
+        Ok(())
+    }
+
+    /// Forgets every list of `name` and its folder (nothing to do when there is none): the package is gone.
+    ///
+    /// # Errors
+    /// `StoreError` when the folder cannot be removed.
     pub fn forget(&self, name: &str) -> Result<(), StoreError> {
-        match std::fs::remove_file(self.file(name)?) {
+        match std::fs::remove_dir_all(self.folder(name)?) {
             Ok(()) => Ok(()),
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(()),
             Err(e) => Err(StoreError::Io(e)),
         }
     }
 
-    /// The names that have a list, sorted.
+    /// Removes the lists of the versions of `name` that are not in `keep` (versions whose files are deleted) and the
+    /// folder of `name` when nothing is left. Returns the versions whose list was removed. The caller names the versions
+    /// to keep and must always include the one that `current/<name>` points to; with an empty `keep` all lists go.
+    ///
+    /// # Errors
+    /// `StoreError` when a list cannot be removed or the folder cannot be read.
+    pub fn prune(&self, name: &str, keep: &[&str]) -> Result<Vec<String>, StoreError> {
+        let mut gone = Vec::new();
+        for version in self.versions(name)? {
+            if !keep.contains(&version.as_str()) {
+                self.forget_version(name, &version)?;
+                gone.push(version);
+            }
+        }
+        Ok(gone)
+    }
+
+    /// The versions of `name` that have a list, sorted as text.
+    ///
+    /// # Errors
+    /// `StoreError` when the folder cannot be read (a missing folder means no lists).
+    pub fn versions(&self, name: &str) -> Result<Vec<String>, StoreError> {
+        let dir = match std::fs::read_dir(self.folder(name)?) {
+            Ok(d) => d,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
+            Err(e) => return Err(StoreError::Io(e)),
+        };
+        let mut versions: Vec<String> = dir
+            .flatten()
+            .filter_map(|e| {
+                e.file_name()
+                    .to_str()?
+                    .strip_suffix(".toml")
+                    .map(str::to_owned)
+            })
+            .collect();
+        versions.sort();
+        Ok(versions)
+    }
+
+    /// The names that have at least one list, sorted.
     ///
     /// # Errors
     /// `StoreError` when the folder cannot be read (a missing folder means no lists).
@@ -160,12 +227,9 @@ impl ManifestStore {
         };
         let mut names: Vec<String> = dir
             .flatten()
-            .filter_map(|e| {
-                e.file_name()
-                    .to_str()?
-                    .strip_suffix(".toml")
-                    .map(str::to_owned)
-            })
+            .filter(|e| e.path().is_dir())
+            .filter_map(|e| e.file_name().to_str().map(str::to_owned))
+            .filter(|n| plain(n))
             .collect();
         names.sort();
         Ok(names)

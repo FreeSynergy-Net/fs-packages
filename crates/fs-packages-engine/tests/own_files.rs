@@ -35,7 +35,10 @@ fn the_install_writes_path_package_version_source_signer_and_checksum() {
     let tmp = tempfile::tempdir().unwrap();
     let root = install(tmp.path(), "prog", Version::new(1, 2, 3), "one");
     assert!(record_install(&root, "prog", "1.2.3", "https://example.org/cat", "ABCD").unwrap());
-    let m = ManifestStore::new(&root).load("prog").unwrap().unwrap();
+    let m = ManifestStore::new(&root)
+        .load("prog", "1.2.3")
+        .unwrap()
+        .unwrap();
     assert_eq!((m.name.as_str(), m.version.as_str()), ("prog", "1.2.3"));
     assert_eq!(
         (m.source.as_str(), m.signer.as_str()),
@@ -85,7 +88,10 @@ fn an_old_install_without_a_list_gets_one_marked_as_made_afterwards() {
     let src = |_: &str| "https://example.org/cat".to_owned();
     let first = verify(&root, None, &src).unwrap();
     assert!(first[0].made_now && first[0].is_clean());
-    let m = ManifestStore::new(&root).load("prog").unwrap().unwrap();
+    let m = ManifestStore::new(&root)
+        .load("prog", "0.9.0")
+        .unwrap()
+        .unwrap();
     assert_eq!(m.basis, Basis::Retroactive);
     assert_eq!(m.source, "https://example.org/cat");
     assert_eq!(m.signer, "");

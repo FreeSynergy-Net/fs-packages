@@ -17,6 +17,7 @@ mod native;
 pub mod net;
 mod own_files;
 mod own_judge;
+mod own_prune;
 mod owner;
 mod platform;
 mod prepare;
@@ -46,6 +47,7 @@ pub use mode::{
     without_deleted_suffix,
 };
 pub use own_files::{Report, Verdict, adopt_missing, collect, record_install, verify};
+pub use own_prune::prune_lists;
 pub use owner::{Owner, owner, system_owner};
 pub use prepare::{Downloaded, Plan, Prepared};
 pub use proc::ProcRunningCheck;

@@ -30,7 +30,11 @@ fn a_damaged_list_of_files_is_an_error_not_all_intact() {
     }
     run(&["verify", "prog"]).unwrap();
 
-    fs::write(root.join("manifests/prog.toml"), "this is { not a list").unwrap();
+    fs::write(
+        root.join("manifests/prog/1.0.0.toml"),
+        "this is { not a list",
+    )
+    .unwrap();
     assert!(run(&["verify", "prog"]).is_err());
     assert!(run(&["verify"]).is_err());
 }

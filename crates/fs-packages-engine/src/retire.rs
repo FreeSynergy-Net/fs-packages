@@ -32,7 +32,6 @@ pub(crate) fn retire_unpacked(root: &Path, name: &str, bin_dir: &Path) -> Vec<St
         say("link", &e);
     }
     let store = ManifestStore::new(root);
-    let listed = store.load(name).ok().flatten();
     let Ok(versions) = fs::read_dir(root.join("packages").join(name)) else {
         return problems;
     };
@@ -40,7 +39,7 @@ pub(crate) fn retire_unpacked(root: &Path, name: &str, bin_dir: &Path) -> Vec<St
     for entry in versions.flatten() {
         let dir = entry.path();
         let version = entry.file_name().to_string_lossy().into_owned();
-        let own_list = listed.as_ref().filter(|m| m.version == version);
+        let own_list = store.load(name, &version).ok().flatten();
         if own_list.is_some_and(|m| stray(&dir, &m.files).is_ok_and(|s| !s.is_empty())) {
             kept = true;
             say(
@@ -49,6 +48,8 @@ pub(crate) fn retire_unpacked(root: &Path, name: &str, bin_dir: &Path) -> Vec<St
             );
         } else if let Err(e) = fs::remove_dir_all(&dir) {
             say("files", &e);
+        } else if let Err(e) = store.forget_version(name, &version) {
+            say("list of files", &format!("{e:?}"));
         }
     }
     if !kept {

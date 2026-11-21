@@ -51,25 +51,33 @@ pub fn owner(root: &Path, path: &Path) -> Result<Option<Owner>, String> {
     let root = fs::canonicalize(root).unwrap_or_else(|_| root.to_owned());
     let store = ManifestStore::new(&root);
     for name in store.names().map_err(|e| format!("{e:?}"))? {
-        let Some(manifest) = store.load(&name).map_err(|e| format!("{name}: {e:?}"))? else {
-            continue;
-        };
-        let dir = package_dir(&root, &manifest.name, &manifest.version);
-        let Ok(rel) = target.strip_prefix(&dir) else {
-            continue;
-        };
-        let rel = rel
-            .components()
-            .map(|c| c.as_os_str().to_string_lossy().into_owned())
-            .collect::<Vec<_>>()
-            .join("/");
-        if let Some(file) = manifest.files.iter().find(|f| f.path == rel).cloned() {
-            let verdict = check_one(&target, &file);
-            return Ok(Some(Owner {
-                manifest,
-                file,
-                verdict,
-            }));
+        for version in store
+            .versions(&name)
+            .map_err(|e| format!("{name}: {e:?}"))?
+        {
+            let Some(manifest) = store
+                .load(&name, &version)
+                .map_err(|e| format!("{name}: {e:?}"))?
+            else {
+                continue;
+            };
+            let dir = package_dir(&root, &manifest.name, &manifest.version);
+            let Ok(rel) = target.strip_prefix(&dir) else {
+                continue;
+            };
+            let rel = rel
+                .components()
+                .map(|c| c.as_os_str().to_string_lossy().into_owned())
+                .collect::<Vec<_>>()
+                .join("/");
+            if let Some(file) = manifest.files.iter().find(|f| f.path == rel).cloned() {
+                let verdict = check_one(&target, &file);
+                return Ok(Some(Owner {
+                    manifest,
+                    file,
+                    verdict,
+                }));
+            }
         }
     }
     Ok(None)
