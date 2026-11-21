@@ -108,7 +108,7 @@ fn two_versions_keep_two_lists_and_prune_removes_list_and_folder_together() {
     assert_eq!(store.prune("p", &["0.0.8"]).unwrap(), ["0.0.7"]);
     assert!(!tmp.path().join("manifests/p/0.0.7.toml").exists());
     assert!(tmp.path().join("manifests/p/0.0.8.toml").is_file());
-    assert!(store.prune("p", &["0.0.8"]).unwrap().is_empty());
+    assert_eq!(store.prune("p", &["0.0.8"]).unwrap(), Vec::<String>::new());
     assert_eq!(store.prune("p", &[]).unwrap(), ["0.0.8"]);
     assert!(
         !tmp.path().join("manifests/p").exists(),
@@ -119,5 +119,5 @@ fn two_versions_keep_two_lists_and_prune_removes_list_and_folder_together() {
     store.save(&at("q", "2")).unwrap();
     store.forget("q").unwrap();
     assert!(!tmp.path().join("manifests/q").exists());
-    assert!(store.names().unwrap().is_empty());
+    assert_eq!(store.names().unwrap(), Vec::<String>::new());
 }

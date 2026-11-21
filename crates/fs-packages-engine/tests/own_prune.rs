@@ -68,7 +68,10 @@ fn after_an_update_both_lists_exist_and_prune_removes_list_and_folder_never_curr
     assert!(root.join("manifests/prog/0.0.8.toml").is_file());
     // never current: even when its folder were missing, the active version keeps its list
     fs::remove_dir_all(root.join("packages/prog/0.0.8")).unwrap();
-    assert!(prune_lists(&root, "prog", "9.9.9").unwrap().is_empty());
+    assert_eq!(
+        prune_lists(&root, "prog", "9.9.9").unwrap(),
+        Vec::<String>::new()
+    );
     assert!(root.join("manifests/prog/0.0.8.toml").is_file());
     // nothing active and nothing on disk: the list folder goes as well
     fs::remove_file(root.join("current/prog")).unwrap();
@@ -101,5 +104,5 @@ fn adopt_missing_stays_retroactive_and_leaves_the_list_of_the_other_version() {
         (before.basis, before.signer.as_str()),
         (Basis::Installed, "K")
     );
-    assert!(adopt_missing(&root, &none).unwrap().is_empty());
+    assert_eq!(adopt_missing(&root, &none).unwrap(), Vec::<String>::new());
 }
