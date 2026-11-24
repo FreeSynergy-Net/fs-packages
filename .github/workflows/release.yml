@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   release:
-    uses: FreeSynergy-Net/fs-release/.github/workflows/release.yml@485f74732ddb90965fafcfa37b6a4f6b473dcc6b
+    uses: FreeSynergy-Net/fs-release/.github/workflows/release.yml@e0aa772a12b91f8a37846b4efef5f44a963a6c47
     with:
       binaries: fs-packages
       cargo-package: fs-packages
