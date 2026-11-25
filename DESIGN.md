@@ -1,5 +1,7 @@
 # fs-packages (FreeSynergy.Packages) – design
 
+> **Status 26.11.2026:** the Blinc window (`crates/fs-packages-app`) was taken out of the workspace (decision C1; the installer frontend follows as a Forms description). The code stays in the repo and in the archive (tag `archive/pre-stw-2-pre`, branch `archiv/2026-11-26/pre-stw-2-pre`). Sections about the window, the typing test and fs-components describe that archived state. The typing-test workflow was removed.
+
 ## Purpose
 The store installs and updates FreeSynergy packages and itself. A package is a program, a frontend, a component or a
 theme (ADR 0036, 0021). Packages come from a list of Git sources. Every download is checked against an OpenPGP
@@ -97,7 +99,7 @@ not see programs started through an interpreter; the real error behind `RolledBa
 package archive is refused, which will need a rule (relative and inside the package) when a package needs one.
 
 ## Packaging and gate (step 7, prepared 2026-11-08)
-`.github/workflows/check.yml` (push gate of `fs-release`) and `release.yml` (binaries `fs-packages` = CLI and `fs-packages-app` = GUI, app id
+`.github/workflows/check.yml` (push gate of `fs-release`) and `release.yml` (binary `fs-packages` (the GUI binary `fs-packages-app` existed until 26.11.2026), app id
 `net.freesynergy.Packages`). Workspace version `0.1.0-rc.1`, so the first tag is `v0.1.0-rc.1`, a pre-release; the draft is signed only
 once the repo has the signing secrets. `check_rust_rules.py` is green locally (0 errors); `lib.rs` files hold only modules and re-exports.
 rpm (done in code, tested with a fake commander only): `Rpm` writes the verified bytes to a private file (0700 dir, 0600, `O_EXCL|O_NOFOLLOW`) and runs `pkexec dnf install -y <file>`; root is asked by pkexec, never by us. dnf is one transaction, so `restore` has nothing to undo; a downgrade is the person's decision. Limit: the running check does not see programs installed under `/usr`. Not yet run for real.
@@ -112,11 +114,10 @@ When `fs-release` rotates the key or subkey, the file in `crates/fs-packages-pgp
 real signed release belongs in the release checklist).
 
 ## One binary (ADR 0063, 2026-11-08; replaces the two-binary naming of the same day)
-`fs-packages` is the only binary (crate `fs-packages`, `crates/fs-packages`). No arguments: the window (`fs-packages-app::gui::run`).
+`fs-packages` is the only binary (crate `fs-packages`, `crates/fs-packages`). No arguments: since 26.11.2026 an error message (the window was taken out, see below); it was the window (`fs-packages-app::gui::run`).
 Subcommands as in git: `fs-packages sources|available|install|update|installed ...` (`fs-packages-cli::run`), `fs-packages serve`
 (server; answers "not built yet" until `fs-packages-server` exists). The other crates are libraries. Pattern: Facade over
-Command. Cargo feature `gui` (default): `cargo build --no-default-features -p fs-packages` builds without graphics (then
-the bare command prints a hint). rpm, menu entry "FreeSynergy.Packages" (`packaging/net.freesynergy.Packages.desktop`) and the
+Command. The Cargo feature `gui` is gone (26.11.2026). rpm, menu entry "FreeSynergy.Packages" (`packaging/net.freesynergy.Packages.desktop`) and the
 catalog list only `fs-packages`.
 
 ## Window resize crash (found by the user, 2026-11-08; solved by Q0, 2026-11-11)

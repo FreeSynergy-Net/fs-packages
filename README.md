@@ -2,9 +2,11 @@
 
 Installs and updates FreeSynergy packages and itself. Design: see DESIGN.md; changes: CHANGELOG.md.
 
-## The window and its frontends
+## The window and its frontends (archived)
 
-`fs-packages` (without arguments) opens the window. Its **frontend** is chosen in the window: menu **View** (German: **Ansicht**), entries
+**Status (26.11.2026): the window was taken out.** `crates/fs-packages-app` (Blinc) is no longer in the workspace and the binary opens no window; the code stays in the repo and in the archive (tag `archive/pre-stw-2-pre`). The installer frontend follows as a Forms description. Everything below about the window describes the archived state, not this build.
+
+`fs-packages` (without arguments) opened the window (archived). Its **frontend** is chosen in the window: menu **View** (German: **Ansicht**), entries
 "Frontend: ...". The choice is remembered (the setting is still called `face` in `settings.toml`, value `"storefront"` or `"compact"`, in the
 data folder of the store, `FS_PACKAGES_ROOT` or `~/.local/share/fs-packages`; the name stays so that saved settings keep working).
 Tiles, details and list are **views** of a frontend, not frontends.
