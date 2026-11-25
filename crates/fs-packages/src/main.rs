@@ -1,11 +1,9 @@
 //! `fs-packages`: one binary for everything (ADR 0063). Pattern: Facade over the crates that stay libraries.
 //!
 //! ```text
-//! fs-packages                         the window (feature `gui`, on by default)
-//! fs-packages [--size WxH] [--snapshot file.png]
+//! fs-packages                         (no window for now: says so and exits with an error)
 //! fs-packages sources | available | install <name> | update <name> | installed
 //! fs-packages serve [--socket PATH]  the server: store.capnp on a Unix socket (reads only for now)
-//! fs-packages log-pump <log>          (internal) keeps the log of a started program at 64 KB, reading the standard input
 //! ```
 
 use std::ffi::OsString;
@@ -55,7 +53,6 @@ fn dispatch(args: &[String]) -> Result<(), String> {
             Ok(())
         }
         Some("gui") => window(&args[1..]),
-        Some("log-pump") => log_pump(&args[1..]),
         Some(flag) if flag.starts_with("--") && flag != "--trust-key" => window(args),
         Some("serve") => {
             match fs_packages_server::serve_command(args[1..].iter().map(OsString::from)) {
@@ -67,34 +64,8 @@ fn dispatch(args: &[String]) -> Result<(), String> {
     }
 }
 
-#[cfg(feature = "gui")]
-fn window(args: &[String]) -> Result<(), String> {
-    // The first start puts the store into the person's menu (never over a file that is not ours); not for a picture or
-    // for `--demo` (a test of the window must not change the person's folders).
-    if !args.iter().any(|a| a == "--snapshot" || a == "--demo") {
-        let _ = fs_packages_engine::ensure_own_menu_entry(&fs_packages_engine::default_apps_dir());
-    }
-    fs_packages_app::gui::run(args)
-}
-
-/// The log pump of a program the store started (internal; see `fs_packages_app::launch_pump`): it ends with the pipe.
-#[cfg(feature = "gui")]
-fn log_pump(args: &[String]) -> Result<(), String> {
-    match fs_packages_app::launch_pump::run(args) {
-        0 => Ok(()),
-        code => Err(format!("log-pump ended with code {code}")),
-    }
-}
-
-#[cfg(not(feature = "gui"))]
-fn log_pump(_args: &[String]) -> Result<(), String> {
-    Err(
-        "this build has no window (built with --no-default-features), so there is no log pump"
-            .into(),
-    )
-}
-
-#[cfg(not(feature = "gui"))]
+/// The window is gone from this binary (decision 26.11.2026): the installer front end comes back as a Forms description.
+/// The old Blinc window stays in `crates/fs-packages-app` (not built).
 fn window(_args: &[String]) -> Result<(), String> {
-    Err("this build has no window (built with --no-default-features); use a subcommand, e.g. `fs-packages installed`".into())
+    Err("this build has no window: the old Blinc window is retired and the Forms front end is not there yet; use a subcommand, e.g. `fs-packages installed`".into())
 }

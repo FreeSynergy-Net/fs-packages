@@ -9,8 +9,8 @@
 use std::path::PathBuf;
 use std::time::Duration;
 
-use fs_interfaces::rpc::FINISH_TIMEOUT;
 use fs_packages_core::Version;
+use fs_rpc::FINISH_TIMEOUT;
 
 use crate::service::InstallFailure;
 use crate::{Server, end_server, find_servers, server_info, socket_of};
@@ -135,7 +135,7 @@ mod tests {
 
     use capnp_rpc::new_client;
     use fs_interfaces::common_capnp::blob;
-    use fs_interfaces::rpc::{ServerIdentity, run_until_signal_as, stop_server};
+    use fs_rpc::{ServerIdentity, run_until_signal_as, stop_server};
 
     struct Seven;
     impl blob::Server for Seven {

@@ -2,10 +2,10 @@
 
 use std::sync::Arc;
 
-use fs_interfaces::rpc::{bind_socket, connect, serve};
 use fs_interfaces::store_capnp::{PackageFormat, store};
 use fs_packages_server::{LocalStore, StoreServer};
 use fs_packages_sources::Registry;
+use fs_rpc::{Caller, PerConnection, Shared, bind_socket, connect, serve_callers};
 
 fn rpm_knows_nothing(_: &str) -> Option<String> {
     None
@@ -29,9 +29,10 @@ where
             let root = StoreServer::new(view).into_client();
             let bound = bind_socket(&path).await.unwrap();
             let (stop, stopped) = tokio::sync::oneshot::channel::<()>();
-            let serving = tokio::task::spawn_local(serve(bound, root.client, async {
-                let _ = stopped.await;
-            }));
+            let serving =
+                tokio::task::spawn_local(serve_callers(bound, Shared(root.client), async {
+                    let _ = stopped.await;
+                }));
             let connection = connect::<store::Client>(&path).await.unwrap();
             test(connection.client.clone()).await;
             drop(connection);
@@ -149,4 +150,51 @@ async fn writes_answer_unsupported_and_change_nothing() {
     })
     .await;
     assert!(!root.path().join("sources.toml").exists());
+}
+
+/// Pattern: Adapter (a `PerConnection` that writes down who was asked for) - proves the store's server gets the caller
+/// from the system on every connection, the way the write commands will need it (ADR 0054).
+struct Noting {
+    client: capnp::capability::Client,
+    seen: std::rc::Rc<std::cell::RefCell<Vec<Caller>>>,
+}
+
+impl PerConnection for Noting {
+    fn bootstrap(&mut self, caller: &Caller) -> capnp::capability::Client {
+        self.seen.borrow_mut().push(caller.clone());
+        self.client.clone()
+    }
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn the_transport_tells_the_server_who_is_on_each_connection() {
+    let local = tokio::task::LocalSet::new();
+    local
+        .run_until(async {
+            let dir = tempfile::tempdir().unwrap();
+            let path = dir.path().join("store.sock");
+            let root = tempfile::tempdir().unwrap();
+            let view = Arc::new(LocalStore::new(root.path()).with_rpm_lookup(rpm_knows_nothing));
+            let seen = std::rc::Rc::default();
+            let per = Noting {
+                client: StoreServer::new(view).into_client().client,
+                seen: std::rc::Rc::clone(&seen),
+            };
+            let bound = bind_socket(&path).await.unwrap();
+            let (stop, stopped) = tokio::sync::oneshot::channel::<()>();
+            let serving = tokio::task::spawn_local(serve_callers(bound, per, async {
+                let _ = stopped.await;
+            }));
+            for _ in 0..2 {
+                let connection = connect::<store::Client>(&path).await.unwrap();
+                let answer = connection.client.sources_request().send().promise.await;
+                assert!(answer.is_ok());
+            }
+            let _ = stop.send(());
+            serving.await.unwrap().unwrap();
+            let seen = seen.borrow();
+            assert_eq!(seen.len(), 2, "one caller per connection");
+            assert!(seen.iter().all(|c| !c.id().is_empty()));
+        })
+        .await;
 }

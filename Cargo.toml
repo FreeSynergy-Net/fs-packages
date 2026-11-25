@@ -1,6 +1,11 @@
 [workspace]
 resolver = "2"
 members = ["crates/*"]
+# fs-packages-app (the Blinc window) is the old way (decision C1, 26.11.2026): the installer front end will be a Forms
+# description (user rule: front ends only with Forms, programs without own code). The crate stays in the repo and in the
+# archive (tag `archive/pre-stw-2-pre`) but is NOT built: it pins the old org URL, fs-components v0.0.26 and, through it,
+# a second fs-types / fs-objects. Card: bring the window functions back as a Forms description (see CHANGELOG).
+exclude = ["crates/fs-packages-app"]
 
 [workspace.package]
 version = "0.0.22"

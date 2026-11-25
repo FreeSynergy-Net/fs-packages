@@ -7,8 +7,8 @@ use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
 
 use fs_interfaces::common_capnp::control;
-use fs_interfaces::rpc::client::{Fault, call_limited};
-use fs_interfaces::rpc::{ServerInfo, connect, default_socket, stop_server};
+use fs_rpc::client::{Fault, call_limited};
+use fs_rpc::{ServerInfo, connect, default_socket, stop_server};
 
 use crate::servers::{Server, alive, own_pid};
 

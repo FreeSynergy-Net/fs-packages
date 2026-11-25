@@ -26,7 +26,7 @@ impl StoreServer {
         Self { view }
     }
 
-    /// The capability to hand to `fs_interfaces::rpc::serve`.
+    /// The capability to hand to `fs_rpc::serve`.
     #[must_use]
     pub fn into_client(self) -> store::Client {
         new_client(self)

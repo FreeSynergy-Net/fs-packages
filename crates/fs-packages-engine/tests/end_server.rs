@@ -11,8 +11,8 @@ use std::time::{Duration, Instant};
 
 use capnp_rpc::new_client;
 use fs_interfaces::common_capnp::blob;
-use fs_interfaces::rpc::{ServerIdentity, bind_socket, run_until_signal_as, serve};
 use fs_packages_engine::{Ended, Server, end_server, end_servers, find_servers, socket_of};
+use fs_rpc::{ServerIdentity, bind_socket, run_until_signal_as, serve};
 
 /// `stop_self` is a flag of the process: one server run at a time.
 static ONE_AT_A_TIME: Mutex<()> = Mutex::new(());
@@ -274,12 +274,9 @@ fn a_server_that_never_answers_is_an_error_within_the_limit_not_a_hang() {
     // the deadline is the one of fs-interfaces: the fault arrives as `Fault::TimedOut`
     let fault = info
         .get_ref()
-        .and_then(|e| e.downcast_ref::<fs_interfaces::rpc::client::Fault>());
+        .and_then(|e| e.downcast_ref::<fs_rpc::client::Fault>());
     assert!(
-        matches!(
-            fault,
-            Some(fs_interfaces::rpc::client::Fault::TimedOut { .. })
-        ),
+        matches!(fault, Some(fs_rpc::client::Fault::TimedOut { .. })),
         "{info:?}"
     );
     let e = end_server(&gone_server(), Some(&socket), Duration::from_secs(1)).unwrap_err();

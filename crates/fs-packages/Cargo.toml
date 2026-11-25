@@ -1,6 +1,6 @@
 [package]
 name = "fs-packages"
-description = "FreeSynergy.Packages: install, update and extend FreeSynergy programs. Without arguments the window opens; subcommands work like git."
+description = "FreeSynergy.Packages: install, update and extend FreeSynergy programs. Subcommands work like git; the window comes back as a Forms description."
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -12,14 +12,8 @@ rust-version = "1.89"
 name = "fs-packages"
 path = "src/main.rs"
 
-[features]
-default = ["gui"]
-# The window (Blinc). Without it the binary has the commands only: `cargo build --no-default-features`.
-gui = ["dep:fs-packages-app"]
-
 [dependencies]
 fs-packages-cli = { path = "../fs-packages-cli" }
 fs-packages-engine = { path = "../fs-packages-engine" }
 fs-packages-core = { path = "../fs-packages-core" }
 fs-packages-server = { path = "../fs-packages-server" }
-fs-packages-app = { path = "../fs-packages-app", optional = true }

@@ -5,7 +5,7 @@
 
 use fs_interfaces::Unsupported;
 use fs_interfaces::provider::Capabilities;
-use fs_interfaces::rpc::unsupported;
+use fs_rpc::unsupported;
 
 /// The contract version this server speaks.
 pub(crate) const CONTRACT_VERSION: &str = "store 0.1 (draft)";

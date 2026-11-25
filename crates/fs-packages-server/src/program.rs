@@ -1,14 +1,16 @@
 //! The server as a command: what `fs-packages serve` runs.
 //!
 //! Pattern: Command (one subcommand of the single `fs-packages` program, ADR 0063) — reads its options,
-//! serves until a signal. Returns the exit code; the binary exits with it.
+//! serves until a signal. Returns the exit code; the binary exits with it. The server runs on fs-rpc's caller-aware path
+//! (`run_until_signal_callers`): every connection is asked from the system who is on it. Today the capability is the
+//! same for all (`Shared`, reads only, writes refused), so the behaviour is unchanged; the guarded store comes next.
 
 use std::ffi::OsString;
 use std::io;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use fs_interfaces::rpc::{ServerIdentity, default_socket, run_until_signal_as};
+use fs_rpc::{ServerIdentity, Shared, default_socket, run_until_signal_callers};
 
 use crate::{LocalStore, StoreServer};
 
@@ -52,9 +54,9 @@ pub fn serve_command(args: impl IntoIterator<Item = OsString>) -> i32 {
     // The identity lets a client of another version replace this server (`connect_matching`) and lets the store
     // end it after an update (`Control.stop`).
     let identity = ServerIdentity::new("fs-packages", env!("CARGO_PKG_VERSION"));
-    let served = run_until_signal_as(&socket, identity, || async {
+    let served = run_until_signal_callers(&socket, identity, || async {
         let view: Arc<dyn crate::StoreView> = Arc::new(LocalStore::open_default());
-        Ok::<_, io::Error>(StoreServer::new(view).into_client().client)
+        Ok::<_, io::Error>(Shared(StoreServer::new(view).into_client().client))
     });
     match served {
         Ok(()) => 0,
