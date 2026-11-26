@@ -252,27 +252,39 @@ very first check), tells the person (`notify-send`, and the launcher badge as Un
 (`FS_PACKAGES_TIMING=1` prints the steps). So a slow rpm update is `pkexec`/`dnf`; dnf now gets `--setopt=metadata_expire=never`
 (a local rpm needs no repository refresh; dry run 1.5 s -> 0.65 s with cache). The time spent typing the password in the pkexec dialog is not ours.
 
-## `fs-packages-server`: programs ask the store for updates (2026-11-08, first slice)
+## `fs-packages-server`: the store as a module (2026-11-08 first slice, STW-2a 2026-11-26)
 Programs never download by themselves; they ask the store ("is there an update for me?") over `store.capnp` on a Unix
-socket (`$XDG_RUNTIME_DIR/freesynergy/store.sock`), started by `fs-packages serve [--socket PATH]` (feature-independent). Crate
-`crates/fs-packages-server` only translates; the shared server side (socket, peer check, problems) is `fs-interfaces` with feature `rpc`.
+socket (`$XDG_RUNTIME_DIR/freesynergy/store.sock`), started by `fs-packages serve [--socket PATH]` (feature-independent). Since STW-2a the
+SAME socket also serves the store as a module (`module_v1`, FormSource): the forms `package`, `source`, `job`, and the eight commands of K7.
+Crate `crates/fs-packages-server` only translates; the shared server side (socket, peer check, `Guarded`, problems) is `fs-rpc`
+(one stand per fs crate: fs-interfaces 71809eaa, fs-rpc cde5b025).
 
 | Pattern | Where |
 |---|---|
 | Facade | `lib.rs` declares modules and re-exports only |
-| Strategy | trait `StoreView` (sources, available, installed): the server asks it, never reads files itself |
-| Adapter | `LocalStore` puts `sources.toml`, `installed.toml`, the signed catalogs and `rpm -q` behind `StoreView`; `wire.rs` puts values onto the wire |
-| Template method | `catalogs.rs`: clone, verify signature, parse, check freshness; a failing source answers as a skipped entry |
-| Value object | `Capabilities` built once; `capabilities`, `supportReport` and every refusal answer from it |
-| Null object | the writes answer the provider-rule `Unsupported` |
-| Command | `serve_command` is the subcommand `fs-packages serve` |
+| Strategy | trait `StoreView` (sources, available, installed): the server asks it, never reads files itself; `StoreRules: RightsRules` is the one rights rule; trait `SystemPackages` is the port every write goes through |
+| Adapter | `LocalStore` puts `sources.toml`, `installed.toml`, the signed catalogs and `rpm -q` behind `StoreView`; `wire.rs` puts values onto the wire; `rows.rs` puts records onto form rows |
+| Template method | `catalogs.rs`: clone, verify signature, parse, check freshness; `StoreCore` gives only reading and changing, the order check -> change -> report stands once in `fs_rpc::Guarded` |
+| Command | `StoreCore` + `StoreCommand` (enum, key `<record kind>.<verb>`, one `match` in `apply`; no `invert` yet); `serve_command` is the subcommand `fs-packages serve` |
+| Decorator | `StoreGuarded` = `Guarded<StoreCore>`: asks `StoreRules` before every `page` and `apply` |
+| Value object | `Capabilities` built once; `Job` (a job record) |
+| Null object | the write methods of `store.capnp` are refused for good (K7: "deprecated: use the command of the form source"); `NoSystem` is the default `SystemPackages` and answers every write `unsupported` (501) |
+| Test double | `FakeSystem` (a `SystemPackages` that records its calls) |
 
-Answers in this slice: `capabilities`, `supportReport`, `sources`, `available` (signed catalogs of enabled sources, as
+**Who may write:** only a person. Every write (and taking a change back) goes through the FormSource commands of `StoreCore` under `Guarded` with
+`StoreRules`: `Actor::Person` is allowed, every other actor (bot, unknown variant) gets `person-only` (403); reading and `watch` are free; an unknown
+key is refused for everybody (`unknown`); nothing is hidden. The actor comes from the peer check (`OsUserIsPerson`), the person from `LocalPerson`; without
+a person the form source does not start and only the contract runs (fails closed). "Person" means today: any process of the same OS user (ADR 0054,
+open point 1; to be settled before STW-3).
+
+Answers of the contract: `capabilities`, `supportReport`, `sources`, `available` (signed catalogs of enabled sources, as
 `fs-packages available`), `installed` (register `installed.toml`; the version `rpm -q` reports wins, then the format is `rpm`; kind
-is `program` and format `tarGz` otherwise, as the register does not hold them). **Unsupported, with a sentence:** `addSource`,
-`setEnabled`, `removeSource`, `refresh`, `install`, `update`, `uninstall` (no write acts without a person; the transport does not
-know the caller yet, ADR 0054), and `job`, `subscribe` (the server starts no job). No change feed yet. Later: writes once the
-caller is known (acts-in-name), jobs and `subscribe` with them.
+is `program` and format `tarGz` otherwise, as the register does not hold them). **Refused for good, with a sentence:** `addSource`,
+`setEnabled`, `removeSource`, `refresh`, `install`, `update`, `uninstall` (they would bypass `Guarded`), and `job`, `subscribe`.
+
+**Honest state (STW-2a):** the commands are checked and recorded, but nothing is installed: the default port `NoSystem` answers `unsupported`
+until PackageKit comes with STW-3 (`FakeSystem` stands in for it in the tests). Jobs are held in memory (job records in fs-objects: STW-2b/4a),
+no change feed yet, level 1 (no `write_by` log, so no `changes` and no `revert`). The command list is in `catalog/commands.json`.
 
 ## TUF client (2026-11-08, first slice)
 `fs-packages-tuf::read_target(root, metadata_dir, targets_dir, name)` reads a file through `tough` 0.24: signatures of the chain

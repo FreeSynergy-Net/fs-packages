@@ -2,7 +2,7 @@
 //!
 //! Pattern: Command - the keys of K7 (`<record kind>.<verb>`, never the module name) are the variants of [`StoreCommand`]; `StoreCore::apply`
 //! turns a key into a variant and matches once. Deviation from the textbook: no `invert` (undo only where the system's package manager
-//! carries it, STW-4a).
+//! carries it, STW-2b/4a).
 
 /// The commands a person gives the store (ENTSCHEID-store-k7-befehle, table 1).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

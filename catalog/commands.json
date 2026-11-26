@@ -1,0 +1,56 @@
+{
+  "module": "packages",
+  "version": "0.0.1",
+  "contract": "store",
+  "scope": "own-contract",
+  "commands": [
+    {
+      "capability": "package.install", "call": "Store.install", "access": "write",
+      "params": [
+        { "path": "source", "type": "text" }
+      ],
+      "help": { "topic": "packages-package-install", "text": { "en": "Install a package (the record). Without a source the best checked offer is used. Only a person may do this.", "de": "Installiert ein Paket (der Datensatz). Ohne Quelle gilt das beste geprüfte Angebot. Das darf nur eine Person." } }
+    },
+    {
+      "capability": "package.update", "call": "Store.update", "access": "write",
+      "params": [
+        { "path": "step", "type": "text", "required": true }
+      ],
+      "help": { "topic": "packages-package-update", "text": { "en": "Update a package, or all when no record is given. step = check (look), offer (show what is there) or run (do it). Only a person may do this.", "de": "Aktualisiert ein Paket, ohne Datensatz alle. step = check (nachsehen), offer (zeigen, was da ist) oder run (ausführen). Das darf nur eine Person." } }
+    },
+    {
+      "capability": "package.uninstall", "call": "Store.uninstall", "access": "delete",
+      "params": [],
+      "help": { "topic": "packages-package-uninstall", "text": { "en": "Uninstall a package. Only a person may do this.", "de": "Deinstalliert ein Paket. Das darf nur eine Person." } }
+    },
+    {
+      "capability": "source.add", "call": "Store.addSource", "access": "write",
+      "params": [
+        { "path": "url", "type": "text", "required": true }
+      ],
+      "help": { "topic": "packages-source-add", "text": { "en": "Add a catalog source by its address (https, ssh, or file on this machine). Only a person may do this.", "de": "Fügt eine Katalogquelle über ihre Adresse hinzu (https, ssh oder file auf diesem Rechner). Das darf nur eine Person." } }
+    },
+    {
+      "capability": "source.enable", "call": "Store.setEnabled", "access": "write",
+      "params": [
+        { "path": "enabled", "type": "text", "required": true }
+      ],
+      "help": { "topic": "packages-source-enable", "text": { "en": "Switch a source on (enabled = true) or off (false).", "de": "Schaltet eine Quelle ein (enabled = true) oder aus (false)." } }
+    },
+    {
+      "capability": "source.remove", "call": "Store.removeSource", "access": "delete",
+      "params": [],
+      "help": { "topic": "packages-source-remove", "text": { "en": "Remove a source. The built-in reference source stays.", "de": "Entfernt eine Quelle. Die eingebaute Bezugsquelle bleibt." } }
+    },
+    {
+      "capability": "source.refresh", "call": "Store.refresh", "access": "write",
+      "params": [],
+      "help": { "topic": "packages-source-refresh", "text": { "en": "Read a source again; without a record every enabled source.", "de": "Liest eine Quelle neu ein; ohne Datensatz jede aktive Quelle." } }
+    },
+    {
+      "capability": "job.cancel", "call": "Store.cancelJob", "access": "write",
+      "params": [],
+      "help": { "topic": "packages-job-cancel", "text": { "en": "Cancel a running job. Only a person may do this.", "de": "Bricht einen laufenden Auftrag ab. Das darf nur eine Person." } }
+    }
+  ]
+}

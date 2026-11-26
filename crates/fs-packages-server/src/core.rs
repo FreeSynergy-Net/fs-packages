@@ -6,7 +6,7 @@
 //!
 //! It checks NO right (the trait says so): that is the job of `StoreRules`, asked by the wrapper before `page` and `apply`. So it is safe ONLY
 //! behind `Guarded` (never hand it out bare). Every write goes to the port [`SystemPackages`]; the catalog and signature check in front of it
-//! and the job records in fs-objects come with STW-4a/2b (the jobs are held in memory until then). Level 1: no `write_by` log, so no
+//! and the job records in fs-objects come with STW-2b/4a (the jobs are held in memory until then). Level 1: no `write_by` log, so no
 //! `changes`, no `revert`, no feed.
 
 #![allow(clippy::unused_async_trait_impl, clippy::unnecessary_literal_bound)] // the trait is async and says `&str`
@@ -240,6 +240,6 @@ impl<S: SystemPackages> ModuleCore for StoreCore<S> {
     }
 
     fn feed(&self, _sink: ChangeFeed) {
-        // Level 1: no change feed (jobs are read again by `page`; the feed comes with the job records of STW-4a).
+        // Level 1: no change feed (jobs are read again by `page`; the feed comes with the job records of STW-2b/4a).
     }
 }
