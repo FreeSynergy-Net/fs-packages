@@ -1,5 +1,7 @@
 //! The package manager of the system, as the store sees it: the port behind every write.
 //!
+//! Pattern: Strategy - one implementation per package manager of the system; each implementation is an Adapter of a foreign API.
+//!
 //! The words are `PackageKit`'s (standard first): a job has a `role`, a `status`, a `percentage` and `allow_cancel`. This file holds the port
 //! and the test double; the real implementations (`PackageKit` on Linux, the Windows Installer) come with STW-3 and STW-5b.
 
