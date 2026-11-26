@@ -1289,7 +1289,7 @@ dependencies = [
 [[package]]
 name = "fs-interfaces"
 version = "0.3.0"
-source = "git+https://github.com/FreeSynergy-Net/fs-interfaces?rev=76df54074910e827ad556ff613335ada49c86de3#76df54074910e827ad556ff613335ada49c86de3"
+source = "git+https://github.com/FreeSynergy-Net/fs-interfaces?rev=71809eaa1e974841762315c7b3187276469ec0bb#71809eaa1e974841762315c7b3187276469ec0bb"
 dependencies = [
  "capnp",
  "fs-types",
@@ -1404,7 +1404,9 @@ dependencies = [
  "fs-packages-engine",
  "fs-packages-pgp",
  "fs-packages-sources",
+ "fs-person-service",
  "fs-rpc",
+ "fs-types",
  "tempfile",
  "tokio",
 ]
@@ -1443,9 +1445,38 @@ dependencies = [
 ]
 
 [[package]]
+name = "fs-person"
+version = "0.0.1"
+source = "git+https://github.com/FreeSynergy-Net/fs-modules-person?rev=904282c861ad815ba8de736f7e057827f2b81113#904282c861ad815ba8de736f7e057827f2b81113"
+dependencies = [
+ "async-trait",
+ "fs-interfaces",
+ "fs-objects",
+ "fs-types",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
+name = "fs-person-service"
+version = "0.0.1"
+source = "git+https://github.com/FreeSynergy-Net/fs-modules-person?rev=904282c861ad815ba8de736f7e057827f2b81113#904282c861ad815ba8de736f7e057827f2b81113"
+dependencies = [
+ "capnp",
+ "capnp-rpc",
+ "fs-interfaces",
+ "fs-objects",
+ "fs-person",
+ "fs-rpc",
+ "fs-types",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
 name = "fs-rpc"
 version = "0.1.4"
-source = "git+https://github.com/FreeSynergy-Net/fs-rpc?rev=459c1e8d1226896cca53c3140f5aa912f43a5305#459c1e8d1226896cca53c3140f5aa912f43a5305"
+source = "git+https://github.com/FreeSynergy-Net/fs-rpc?rev=cde5b025b3980f7dcc1d5d678ad5aea981015f8a#cde5b025b3980f7dcc1d5d678ad5aea981015f8a"
 dependencies = [
  "capnp",
  "capnp-rpc",
@@ -1465,7 +1496,7 @@ dependencies = [
 [[package]]
 name = "fs-trusted-path"
 version = "0.1.4"
-source = "git+https://github.com/FreeSynergy-Net/fs-rpc?rev=459c1e8d1226896cca53c3140f5aa912f43a5305#459c1e8d1226896cca53c3140f5aa912f43a5305"
+source = "git+https://github.com/FreeSynergy-Net/fs-rpc?rev=cde5b025b3980f7dcc1d5d678ad5aea981015f8a#cde5b025b3980f7dcc1d5d678ad5aea981015f8a"
 dependencies = [
  "windows-sys 0.61.2",
 ]

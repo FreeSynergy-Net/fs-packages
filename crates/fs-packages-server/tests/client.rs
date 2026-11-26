@@ -142,6 +142,10 @@ async fn writes_answer_unsupported_and_change_nothing() {
         let error = request.send().promise.await.err().unwrap();
         assert_eq!(error.kind, capnp::ErrorKind::Unimplemented);
         assert!(error.to_string().contains("package.install"), "{error}");
+        assert!(
+            error.to_string().contains("deprecated"),
+            "K7: the reason names the form source command: {error}"
+        );
 
         let mut request = client.add_source_request();
         request.get().set_url("https://example.invalid/x");

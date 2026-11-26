@@ -7,33 +7,33 @@ use fs_interfaces::Unsupported;
 use fs_interfaces::provider::Capabilities;
 use fs_rpc::unsupported;
 
+use crate::command::StoreCommand;
+
 /// The contract version this server speaks.
 pub(crate) const CONTRACT_VERSION: &str = "store 0.1 (draft)";
 
-const NO_CALLER: &str = "this write needs a person who asks; the transport does not know the caller yet (ADR 0054), so the store does not act on the socket. Use the window or `fs-packages` on the command line";
-
-/// The capabilities of the first slice: reads work, writes and jobs are named as not possible.
+/// The capabilities of the contract `store`: reads work; writes are deprecated (K7) and jobs are read through the form source.
 pub(crate) fn capabilities() -> Capabilities {
     let mut c = Capabilities::new("fs-packages");
     c.supported("source.read").supported("package.read");
-    for id in [
-        "source.add",
-        "source.enable",
-        "source.remove",
-        "source.refresh",
-        "package.install",
-        "package.update",
-        "package.uninstall",
-    ] {
-        c.unsupported(id, NO_CALLER);
+    // K7: the write methods of the contract are deprecated and refused for good; the same keys are commands of the form source.
+    for id in StoreCommand::ALL
+        .into_iter()
+        .filter(|c| *c != StoreCommand::CancelJob)
+        .map(StoreCommand::key)
+    {
+        c.unsupported(
+            id,
+            format!("deprecated: use the command `{id}` of the form source"),
+        );
     }
     c.unsupported(
         "job.read",
-        "jobs run in the window or on the command line for now; the server starts none, so there is none to read",
+        "deprecated: read the records `job` through the form source",
     );
     c.unsupported(
         "job.subscribe",
-        "no job runs through the server in this slice, so there is nothing to announce",
+        "deprecated: watch the records `job` through the form source",
     );
     c
 }

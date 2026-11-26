@@ -17,12 +17,16 @@ fs-packages-catalog = { path = "../fs-packages-catalog" }
 fs-packages-engine = { path = "../fs-packages-engine" }
 fs-packages-pgp = { path = "../fs-packages-pgp" }
 fs-packages-sources = { path = "../fs-packages-sources" }
-fs-interfaces = { git = "https://github.com/FreeSynergy-Net/fs-interfaces", rev = "76df54074910e827ad556ff613335ada49c86de3", version = "0.3.0" }
-fs-rpc = { git = "https://github.com/FreeSynergy-Net/fs-rpc", rev = "459c1e8d1226896cca53c3140f5aa912f43a5305", version = "0.1.4" }
+fs-interfaces = { git = "https://github.com/FreeSynergy-Net/fs-interfaces", rev = "71809eaa1e974841762315c7b3187276469ec0bb", version = "0.3.0" }
+fs-rpc = { git = "https://github.com/FreeSynergy-Net/fs-rpc", rev = "cde5b025b3980f7dcc1d5d678ad5aea981015f8a", version = "0.1.4" }
+fs-person-service = { git = "https://github.com/FreeSynergy-Net/fs-modules-person", rev = "904282c861ad815ba8de736f7e057827f2b81113", version = "0.0.1", features = ["client"] }
 capnp = "0.27"
 capnp-rpc = "0.27"
 tokio = { version = "1", features = ["rt"] }
 
 [dev-dependencies]
 tempfile = "3"
+fs-types = { git = "https://github.com/FreeSynergy-Net/fs-types", rev = "722d3ce0156711d40cb278f2e835e865d9448290", version = "0.0.7" }
+# The sample persons (`owner::fake`): the SAME source as fs-interfaces above (one fs-* stand in the lock).
+fs-interfaces = { git = "https://github.com/FreeSynergy-Net/fs-interfaces", rev = "71809eaa1e974841762315c7b3187276469ec0bb", version = "0.3.0", features = ["fake"] }
 tokio = { version = "1", features = ["full"] }
